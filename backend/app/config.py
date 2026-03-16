@@ -1,0 +1,21 @@
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    model_config = {"env_prefix": "AR_", "env_file": ".env"}
+
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/autoresearch"
+    database_url_sync: str = "postgresql://postgres:postgres@localhost:5432/autoresearch"
+
+    encryption_key: str = ""  # Fernet key — generate via cryptography.fernet.Fernet.generate_key()
+
+    default_training_timeout_seconds: int = 720  # 12 minutes
+    max_run_memory_records: int = 5
+
+    cors_origins: list[str] = ["*"]
+
+    # Optional API key for remote access — if empty, auth is disabled
+    api_key: str = ""
+
+
+settings = Settings()

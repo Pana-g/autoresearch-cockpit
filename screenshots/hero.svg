@@ -1,0 +1,197 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#050a14"/>
+      <stop offset="100%" stop-color="#0a1220"/>
+    </linearGradient>
+    <radialGradient id="core-glow" cx="600" cy="200" r="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.06"/>
+      <stop offset="60%" stop-color="#06b6d4" stop-opacity="0.02"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="beaker-glow" cx="600" cy="195" r="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="liquid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#0891b2" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.6"/>
+      <stop offset="25%" stop-color="#06b6d4" stop-opacity="0.15"/>
+      <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.4"/>
+      <stop offset="75%" stop-color="#06b6d4" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="ring-grad-2" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0891b2" stop-opacity="0.3"/>
+      <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.25"/>
+    </linearGradient>
+    <filter id="glow-sm">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-md">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feBlend in="SourceGraphic" mode="multiply" result="grain"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.03"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="screen"/>
+    </filter>
+    <clipPath id="beaker-interior">
+      <path d="M572 175 L560 250 Q558 262 570 268 L630 268 Q642 262 640 250 L628 175 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="400" fill="url(#bg)"/>
+  <rect width="1200" height="400" fill="url(#core-glow)"/>
+
+  <!-- Fine grid -->
+  <g opacity="0.025" stroke="#06b6d4" stroke-width="0.5">
+    <line x1="0" y1="100" x2="1200" y2="100"/>
+    <line x1="0" y1="200" x2="1200" y2="200"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="300" y1="0" x2="300" y2="400"/>
+    <line x1="600" y1="0" x2="600" y2="400"/>
+    <line x1="900" y1="0" x2="900" y2="400"/>
+  </g>
+
+  <!-- ===== ORBITAL RINGS ===== -->
+  <ellipse cx="600" cy="200" rx="170" ry="170" fill="none" stroke="url(#ring-grad-2)" stroke-width="0.8" transform="rotate(-15, 600, 200)"/>
+  <ellipse cx="600" cy="200" rx="140" ry="50" fill="none" stroke="url(#ring-grad)" stroke-width="1" transform="rotate(-25, 600, 200)" opacity="0.6"/>
+  <ellipse cx="600" cy="200" rx="130" ry="45" fill="none" stroke="url(#ring-grad)" stroke-width="0.8" transform="rotate(30, 600, 200)" opacity="0.4"/>
+  <ellipse cx="600" cy="200" rx="40" ry="155" fill="none" stroke="url(#ring-grad-2)" stroke-width="0.6" transform="rotate(10, 600, 200)" opacity="0.3"/>
+
+  <!-- Orbital dots -->
+  <circle cx="770" cy="195" r="2.5" fill="#06b6d4" opacity="0.7" filter="url(#glow-sm)">
+    <animateTransform attributeName="transform" type="rotate" from="0 600 200" to="360 600 200" dur="20s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="430" cy="205" r="2" fill="#06b6d4" opacity="0.5" filter="url(#glow-sm)">
+    <animateTransform attributeName="transform" type="rotate" from="0 600 200" to="-360 600 200" dur="28s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="600" cy="45" r="1.8" fill="#0891b2" opacity="0.6" filter="url(#glow-sm)">
+    <animateTransform attributeName="transform" type="rotate" from="0 600 200" to="360 600 200" dur="35s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ===== CENTRAL BEAKER ===== -->
+  <g filter="url(#glow-md)">
+    <circle cx="600" cy="195" r="60" fill="url(#beaker-glow)"/>
+    <!-- Beaker body -->
+    <path d="M580 145 L580 180 L562 248 Q558 262 572 268 L628 268 Q642 262 638 248 L620 180 L620 145"
+      fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+    <!-- Rim -->
+    <line x1="573" y1="145" x2="627" y2="145" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+    <!-- Handle marks -->
+    <line x1="575" y1="145" x2="575" y2="138" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+    <line x1="625" y1="145" x2="625" y2="138" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+    <!-- Liquid -->
+    <g clip-path="url(#beaker-interior)">
+      <rect x="555" y="215" width="90" height="55" fill="url(#liquid)"/>
+      <circle cx="588" cy="245" r="3" fill="#06b6d4" opacity="0.2">
+        <animate attributeName="cy" values="252;225;210" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.3;0.15;0" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="605" cy="250" r="2" fill="#06b6d4" opacity="0.25">
+        <animate attributeName="cy" values="255;230;215" dur="2.5s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.25;0.1;0" dur="2.5s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="615" cy="248" r="2.5" fill="#06b6d4" opacity="0.2">
+        <animate attributeName="cy" values="250;228;212" dur="3.5s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.3;0.12;0" dur="3.5s" repeatCount="indefinite"/>
+      </circle>
+      <line x1="563" y1="215" x2="637" y2="215" stroke="#06b6d4" stroke-width="1" opacity="0.3"/>
+    </g>
+    <!-- Measurement marks -->
+    <line x1="627" y1="220" x2="634" y2="218" stroke="#06b6d4" stroke-width="0.8" opacity="0.3"/>
+    <line x1="624" y1="235" x2="631" y2="233" stroke="#06b6d4" stroke-width="0.8" opacity="0.3"/>
+    <line x1="621" y1="250" x2="628" y2="248" stroke="#06b6d4" stroke-width="0.8" opacity="0.3"/>
+  </g>
+
+  <!-- ===== HUD ELEMENTS ===== -->
+  <!-- Left bracket -->
+  <g opacity="0.25" stroke="#06b6d4" stroke-width="1" fill="none" stroke-linecap="round">
+    <path d="M400 160 L410 160 L410 240 L400 240"/>
+    <line x1="405" y1="175" x2="415" y2="175"/>
+    <line x1="405" y1="200" x2="420" y2="200"/>
+    <line x1="405" y1="225" x2="415" y2="225"/>
+  </g>
+  <!-- Right bracket -->
+  <g opacity="0.25" stroke="#06b6d4" stroke-width="1" fill="none" stroke-linecap="round">
+    <path d="M800 160 L790 160 L790 240 L800 240"/>
+    <line x1="795" y1="175" x2="785" y2="175"/>
+    <line x1="795" y1="200" x2="780" y2="200"/>
+    <line x1="795" y1="225" x2="785" y2="225"/>
+  </g>
+  <!-- Top crosshair -->
+  <g opacity="0.15" stroke="#06b6d4" stroke-width="0.5">
+    <line x1="590" y1="90" x2="610" y2="90"/>
+    <line x1="600" y1="80" x2="600" y2="100"/>
+  </g>
+
+  <!-- Readouts - left -->
+  <g opacity="0.2">
+    <text x="350" y="178" font-family="'SF Mono', 'Fira Code', monospace" font-size="7" fill="#06b6d4">ITER</text>
+    <text x="350" y="190" font-family="'SF Mono', 'Fira Code', monospace" font-size="9" fill="#94a3b8">014/020</text>
+    <text x="350" y="210" font-family="'SF Mono', 'Fira Code', monospace" font-size="7" fill="#06b6d4">LOSS</text>
+    <text x="350" y="222" font-family="'SF Mono', 'Fira Code', monospace" font-size="9" fill="#94a3b8">0.2384</text>
+  </g>
+  <!-- Readouts - right -->
+  <g opacity="0.2">
+    <text x="818" y="178" font-family="'SF Mono', 'Fira Code', monospace" font-size="7" fill="#06b6d4">STATUS</text>
+    <text x="818" y="190" font-family="'SF Mono', 'Fira Code', monospace" font-size="9" fill="#22c55e">RUNNING</text>
+    <text x="818" y="210" font-family="'SF Mono', 'Fira Code', monospace" font-size="7" fill="#06b6d4">TOKENS</text>
+    <text x="818" y="222" font-family="'SF Mono', 'Fira Code', monospace" font-size="9" fill="#94a3b8">142,891</text>
+  </g>
+
+  <!-- Scattered particles -->
+  <g opacity="0.12" fill="#06b6d4">
+    <circle cx="280" cy="140" r="1"/><circle cx="320" cy="280" r="0.8"/>
+    <circle cx="250" cy="220" r="1.2"/><circle cx="910" cy="130" r="1"/>
+    <circle cx="880" cy="270" r="0.8"/><circle cx="950" cy="180" r="1.2"/>
+    <circle cx="195" cy="310" r="0.6"/><circle cx="1020" cy="310" r="0.6"/>
+    <circle cx="160" cy="170" r="0.8"/><circle cx="1050" cy="150" r="0.8"/>
+  </g>
+
+  <!-- Abstract loss curve hint (left) -->
+  <g opacity="0.12" transform="translate(180, 170)">
+    <polyline points="0,40 15,38 30,34 45,28 60,22 75,17 90,13 105,10 120,8 135,7"
+      fill="none" stroke="#06b6d4" stroke-width="1.2" stroke-linecap="round"/>
+  </g>
+  <!-- Abstract bar chart hint (right) -->
+  <g opacity="0.12" transform="translate(920, 180)">
+    <rect x="0" y="24" width="8" height="16" rx="1" fill="#06b6d4"/>
+    <rect x="14" y="16" width="8" height="24" rx="1" fill="#06b6d4"/>
+    <rect x="28" y="10" width="8" height="30" rx="1" fill="#06b6d4"/>
+    <rect x="42" y="4" width="8" height="36" rx="1" fill="#06b6d4"/>
+    <rect x="56" y="0" width="8" height="40" rx="1" fill="#06b6d4"/>
+  </g>
+
+  <!-- ===== TYPOGRAPHY ===== -->
+  <text x="600" y="330" text-anchor="middle" font-family="'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="#e2e8f0" letter-spacing="2">
+    AutoResearch Cockpit
+  </text>
+  <text x="600" y="352" text-anchor="middle" font-family="'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif" font-size="12" fill="#64748b" letter-spacing="3" font-weight="400">
+    ORCHESTRATE AI TRAINING EXPERIMENTS
+  </text>
+  <line x1="520" y1="362" x2="680" y2="362" stroke="#06b6d4" stroke-width="1" opacity="0.2"/>
+
+  <!-- Corner brackets -->
+  <g stroke="#06b6d4" stroke-width="1" opacity="0.15" fill="none" stroke-linecap="round">
+    <path d="M16 40 L16 16 L40 16"/>
+    <path d="M1184 40 L1184 16 L1160 16"/>
+    <path d="M16 360 L16 384 L40 384"/>
+    <path d="M1184 360 L1184 384 L1160 384"/>
+  </g>
+
+  <!-- Grain overlay -->
+  <rect width="1200" height="400" filter="url(#grain)" opacity="0.4"/>
+</svg>
