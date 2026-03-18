@@ -283,8 +283,8 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
               </span>
             </div>
           )}
-          <div className="h-60" ref={chartContainerRef}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-60" ref={chartContainerRef} style={{ minWidth: 0 }}>
+            <ResponsiveContainer width="99%" height="100%">
               <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
                 <defs>
                   <linearGradient id="bpbGradient" x1="0" y1="0" x2="0" y2="1">

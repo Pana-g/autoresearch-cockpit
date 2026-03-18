@@ -35,6 +35,7 @@ class Run(Base, TimestampMixin):
     context_limit: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # 0 = auto-detect from model
     compacted_summary: Mapped[str | None] = mapped_column(Text, nullable=True)  # compacted memory text
     compacted_up_to: Mapped[int | None] = mapped_column(Integer, nullable=True)  # iteration up to which records are compacted
+    compacting: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # True while compaction is in progress
 
     project: Mapped["Project"] = relationship(back_populates="runs", lazy="selectin", foreign_keys=[project_id])  # noqa: F821
     workspace: Mapped["Workspace | None"] = relationship(  # noqa: F821

@@ -170,6 +170,7 @@ export interface ContextUsage {
   compacted: boolean;
   compacted_up_to: number | null;
   memory_count: number;
+  compacting: boolean;
 }
 
 /* ── SSE event types ─────────────────────────────────── */

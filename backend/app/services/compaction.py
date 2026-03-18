@@ -1,6 +1,15 @@
-"""Context compaction — reduce memory records to fit within context limits."""
+"""Context compaction — reduce memory records to fit within context limits.
+
+Supports two modes:
+  1. **LLM-based** (`llm_compact`) — calls the same provider/model to produce an
+     intelligent, structured summary of older iterations plus any human notes.
+  2. **Fallback** (`build_compacted_summary`) — a fast, deterministic template
+     used when LLM call fails or when no provider is available.
+"""
 
 import logging
+
+from app.providers.base import BaseProvider
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +35,40 @@ CONTEXT_WINDOW_SIZES: dict[str, int] = {
 
 DEFAULT_CONTEXT_WINDOW = 128_000
 
+_COMPACTION_SYSTEM_PROMPT = """\
+You are a research-memory compactor. You will receive a list of past iteration \
+records from an ML training optimisation run, plus any human-provided notes.
+
+Your job is to produce a SHORT, structured summary that preserves all \
+information the agent needs to avoid repeating mistakes and to build on \
+successes. Be extremely concise — use bullet lists, not prose.
+
+OUTPUT FORMAT (use this exact markdown structure):
+
+## Compacted Memory (Iterations 1–{up_to})
+{n} iterations compacted into this summary.
+
+### Best result
+- Best val_bpb: <value> (iteration <n>)
+- Iterations that improved: <comma-separated list or "none">
+
+### ❌ Failed approaches — DO NOT REPEAT
+- <one-line summary per failed attempt — include the key idea and why it failed>
+
+### ✅ Successful approaches — build on these
+- <one-line summary per successful attempt — include the key idea>
+
+### 📝 Human guidance (summarised)
+- <one-line summary per instruction the human gave — preserve the intent>
+
+RULES:
+- Keep each bullet to ONE line.
+- Group similar failures together (e.g. "LR increases: tried 3x-10x, all worsened val_bpb").
+- Drop redundant detail but NEVER drop the core idea of an approach so it can be avoided or reused.
+- If there are no human notes, omit that section entirely.
+- Do NOT add commentary, preamble, or explanations outside the format above.
+"""
+
 
 def get_context_limit(model: str, override: int = 0) -> int:
     """Get context window size for a model. Override > 0 takes precedence."""
@@ -45,11 +88,80 @@ def estimate_tokens(text: str) -> int:
     return len(text) // 4
 
 
+# ---------------------------------------------------------------------------
+# LLM-based compaction
+# ---------------------------------------------------------------------------
+
+async def llm_compact(
+    memory_records: list[dict],
+    human_notes: list[str],
+    provider: BaseProvider,
+    model: str,
+    credentials: dict,
+    keep_recent: int = 5,
+) -> tuple[str, int]:
+    """Use the LLM to produce a concise compacted summary.
+
+    Falls back to the deterministic template if the LLM call fails.
+
+    Returns: (compacted_summary_text, compacted_up_to_iteration)
+    """
+    if len(memory_records) <= keep_recent:
+        return "", 0
+
+    to_compact = memory_records[:-keep_recent]
+    compacted_up_to = to_compact[-1]["iteration"]
+
+    # Build the user message with the raw records
+    parts: list[str] = []
+    parts.append(f"Compact the following {len(to_compact)} iteration records (iterations 1–{compacted_up_to}).\n\n")
+
+    for rec in to_compact:
+        bpb = rec.get("val_bpb")
+        bpb_str = f"val_bpb={bpb:.4f}" if bpb is not None else "no metric"
+        status = "IMPROVED" if rec.get("improved") else "FAILED/NO IMPROVEMENT"
+        parts.append(f"- Iteration {rec['iteration']} [{bpb_str}] ({status}): {rec['summary']}\n")
+
+    if human_notes:
+        parts.append("\n## Human notes given during these iterations:\n")
+        for note in human_notes:
+            parts.append(f"- {note}\n")
+
+    messages = [
+        {"role": "system", "content": _COMPACTION_SYSTEM_PROMPT.format(
+            up_to=compacted_up_to, n=len(to_compact),
+        )},
+        {"role": "user", "content": "".join(parts)},
+    ]
+
+    try:
+        resp = await provider.create_response(
+            model=model, messages=messages, credentials=credentials,
+        )
+        summary = resp.content.strip()
+        if summary:
+            logger.info(
+                "LLM compaction succeeded: %d records → %d chars",
+                len(to_compact), len(summary),
+            )
+            return summary, compacted_up_to
+        logger.warning("LLM compaction returned empty — falling back to template")
+    except Exception:
+        logger.exception("LLM compaction failed — falling back to template")
+
+    # Fallback to deterministic template
+    return build_compacted_summary(memory_records, keep_recent)
+
+
+# ---------------------------------------------------------------------------
+# Deterministic fallback compaction
+# ---------------------------------------------------------------------------
+
 def build_compacted_summary(
     memory_records: list[dict],
     keep_recent: int = 5,
 ) -> tuple[str, int]:
-    """Build a compacted summary from memory records.
+    """Build a compacted summary from memory records (deterministic fallback).
 
     Keeps the most recent `keep_recent` records as-is (they will be appended
     individually in the prompt). The rest are compressed into a structured

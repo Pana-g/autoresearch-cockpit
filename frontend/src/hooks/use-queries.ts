@@ -305,7 +305,10 @@ export function useContextUsage(projectId: string, runId: string) {
     queryKey: ["context-usage", runId],
     queryFn: () => runs.getContextUsage(projectId, runId),
     enabled: !!projectId && !!runId,
-    refetchInterval: 30_000,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data?.compacting ? 2_000 : 30_000;
+    },
   });
 }
 

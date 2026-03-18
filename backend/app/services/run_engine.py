@@ -44,6 +44,7 @@ from app.services.prompt_builder import build_agent_prompt
 from app.services.compaction import (
     build_compacted_summary,
     check_compaction_needed,
+    llm_compact,
 )
 
 logger = logging.getLogger(__name__)
@@ -325,32 +326,57 @@ async def wake_agent(run_id: str) -> None:
                     "memory_count": len(memory_records),
                 })
 
-                if run.auto_compact:
-                    summary, up_to = build_compacted_summary(memory_records)
-                    if summary and up_to:
-                        run.compacted_summary = summary
-                        run.compacted_up_to = up_to
+                if run.auto_compact and not run.compacting:
+                    # Mark compaction as in-progress
+                    run.compacting = True
+                    session.add(run)
+                    await session.commit()
+
+                    try:
+                        # Gather all delivered human notes for compaction context
+                        delivered_notes_result = await session.execute(
+                            select(RunNote)
+                            .where(RunNote.run_id == run_id, RunNote.delivered_at.isnot(None))
+                            .order_by(RunNote.created_at.asc())
+                        )
+                        all_delivered_notes = [n.content for n in delivered_notes_result.scalars().all()]
+
+                        # LLM-based compaction (falls back to template on error)
+                        credentials = await _get_credentials(session, run)
+                        provider = get_provider(run.provider)
+                        summary, up_to = await llm_compact(
+                            memory_records=memory_records,
+                            human_notes=all_delivered_notes,
+                            provider=provider,
+                            model=run.model,
+                            credentials=credentials,
+                        )
+                        if summary and up_to:
+                            run.compacted_summary = summary
+                            run.compacted_up_to = up_to
+
+                            # Rebuild prompt with compacted data
+                            messages = build_agent_prompt(
+                                program_md=program_md,
+                                train_py=train_py,
+                                memory_records=memory_records,
+                                latest_metrics=latest_metrics,
+                                human_notes=human_notes,
+                                iteration=run.iteration,
+                                best_val_bpb=run.best_val_bpb,
+                                overfit_floor=run.overfit_floor,
+                                compacted_summary=run.compacted_summary,
+                                compacted_up_to=run.compacted_up_to,
+                            )
+
+                            await publish(run_id, "compaction_done", {
+                                "compacted_up_to": up_to,
+                                "memory_count": len(memory_records),
+                            })
+                    finally:
+                        run.compacting = False
                         session.add(run)
                         await session.commit()
-
-                        # Rebuild prompt with compacted data
-                        messages = build_agent_prompt(
-                            program_md=program_md,
-                            train_py=train_py,
-                            memory_records=memory_records,
-                            latest_metrics=latest_metrics,
-                            human_notes=human_notes,
-                            iteration=run.iteration,
-                            best_val_bpb=run.best_val_bpb,
-                            overfit_floor=run.overfit_floor,
-                            compacted_summary=run.compacted_summary,
-                            compacted_up_to=run.compacted_up_to,
-                        )
-
-                        await publish(run_id, "compaction_done", {
-                            "compacted_up_to": up_to,
-                            "memory_count": len(memory_records),
-                        })
 
             # Mark notes as delivered and auto-deactivate
             now = datetime.now(timezone.utc)

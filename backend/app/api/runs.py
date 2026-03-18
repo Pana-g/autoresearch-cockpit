@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
-from app.models import AgentStep, Project, Run, RunMemory, RunState, TrainingStep, Workspace
+from app.models import AgentStep, Project, ProviderCredential, Run, RunMemory, RunNote, RunState, TrainingStep, Workspace
 from app.schemas import (
     AgentStepResponse,
     CheckpointRestartRequest,
@@ -443,7 +443,11 @@ from app.services.compaction import (
     check_compaction_needed,
     estimate_tokens,
     get_context_limit,
+    llm_compact,
 )
+from app.providers.registry import get_provider
+from app.services.encryption import decrypt
+import json as _json
 
 
 @router.get("/{run_id}/compaction", response_model=CompactionResponse)
@@ -546,6 +550,7 @@ async def get_context_usage(
         "compacted": run.compacted_up_to is not None,
         "compacted_up_to": run.compacted_up_to,
         "memory_count": len(memory_records),
+        "compacting": run.compacting,
     }
 
 
@@ -553,29 +558,71 @@ async def get_context_usage(
 async def apply_compaction(
     project_id: str, run_id: str, db: AsyncSession = Depends(get_db)
 ):
-    """Apply compaction using the auto-generated summary."""
+    """Apply LLM-based compaction (falls back to template on error)."""
     run = await db.get(Run, run_id)
     if run is None or run.project_id != project_id:
         raise HTTPException(404, "Run not found")
 
-    mem_result = await db.execute(
-        select(RunMemory)
-        .where(RunMemory.run_id == run_id)
-        .order_by(RunMemory.iteration.asc())
-    )
-    records = [
-        {"iteration": m.iteration, "summary": m.summary, "val_bpb": m.val_bpb, "improved": m.improved}
-        for m in mem_result.scalars().all()
-    ]
+    if run.compacting:
+        raise HTTPException(409, "Compaction already in progress")
 
-    summary, up_to = build_compacted_summary(records)
-    if not summary:
-        raise HTTPException(400, "Not enough records to compact")
-
-    run.compacted_summary = summary
-    run.compacted_up_to = up_to
+    # Mark compaction as in-progress
+    run.compacting = True
     db.add(run)
     await db.commit()
+
+    try:
+        mem_result = await db.execute(
+            select(RunMemory)
+            .where(RunMemory.run_id == run_id)
+            .order_by(RunMemory.iteration.asc())
+        )
+        records = [
+            {"iteration": m.iteration, "summary": m.summary, "val_bpb": m.val_bpb, "improved": m.improved}
+            for m in mem_result.scalars().all()
+        ]
+
+        # Gather all delivered human notes for compaction context
+        notes_result = await db.execute(
+            select(RunNote)
+            .where(RunNote.run_id == run_id, RunNote.delivered_at.isnot(None))
+            .order_by(RunNote.created_at.asc())
+        )
+        human_notes = [n.content for n in notes_result.scalars().all()]
+
+        # Get provider credentials
+        try:
+            credentials: dict = {}
+            if run.credential_id:
+                cred = await db.get(ProviderCredential, run.credential_id)
+                if cred:
+                    credentials = _json.loads(decrypt(cred.encrypted_data))
+            elif run.provider == "ollama":
+                credentials = {"base_url": "http://localhost:11434/v1"}
+            elif run.provider == "github-copilot":
+                credentials = {"mode": "proxy"}
+
+            provider = get_provider(run.provider)
+            summary, up_to = await llm_compact(
+                memory_records=records,
+                human_notes=human_notes,
+                provider=provider,
+                model=run.model,
+                credentials=credentials,
+            )
+        except Exception:
+            # Fallback to deterministic template
+            summary, up_to = build_compacted_summary(records)
+
+        if not summary:
+            raise HTTPException(400, "Not enough records to compact")
+
+        run.compacted_summary = summary
+        run.compacted_up_to = up_to
+    finally:
+        run.compacting = False
+        db.add(run)
+        await db.commit()
 
     return {"status": "compacted", "compacted_up_to": up_to}
 

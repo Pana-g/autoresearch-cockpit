@@ -268,6 +268,7 @@ class ContextUsageResponse(BaseModel):
     compacted: bool = False
     compacted_up_to: int | None = None
     memory_count: int = 0
+    compacting: bool = False
 
 
 # ── Notification Channels ────────────────────────────────

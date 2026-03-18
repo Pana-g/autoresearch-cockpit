@@ -50,13 +50,13 @@ jobs:
             archive_cmd: tar -czf
             archive_ext: .tar.gz
 
-          - os: macos-13          # Intel runner
+          - os: macos-13          # Intel x64 runner (last available Intel runner)
             platform: macos-x64
             artifact: autoresearch-cockpit
             archive_cmd: tar -czf
             archive_ext: .tar.gz
 
-          - os: macos-latest      # Apple Silicon (arm64) runner
+          - os: macos-latest      # Apple Silicon arm64 runner
             platform: macos-arm64
             artifact: autoresearch-cockpit
             archive_cmd: tar -czf

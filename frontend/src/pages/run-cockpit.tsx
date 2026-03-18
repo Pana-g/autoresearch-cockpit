@@ -342,25 +342,28 @@ export default function RunCockpitPage() {
                 </div>
 
                 {/* Compact Now button */}
-                {run.iteration > 5 && (
+                {(ctxUsage ? ctxUsage.memory_count > 5 : run.iteration > 5) && (
                   <button
                     onClick={() => {
                       applyCompaction.mutate(undefined, {
-                        onSuccess: () => toast.success("Context compacted successfully"),
+                        onSuccess: () => {
+                          toast.success("Context compacted successfully");
+                          setCompactionModalOpen(true);
+                        },
                         onError: (err: Error) => toast.error(`Compaction failed: ${err.message}`),
                       });
                     }}
-                    disabled={applyCompaction.isPending}
+                    disabled={applyCompaction.isPending || ctxUsage?.compacting}
                     className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium transition-all
                       bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 active:scale-[0.97]
                       disabled:opacity-40 disabled:pointer-events-none border border-orange-500/20 hover:border-orange-500/30"
                   >
-                    {applyCompaction.isPending ? (
+                    {(applyCompaction.isPending || ctxUsage?.compacting) ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Shrink className="h-3.5 w-3.5" />
                     )}
-                    <span>{applyCompaction.isPending ? "Compacting..." : "Compact Now"}</span>
+                    <span>{(applyCompaction.isPending || ctxUsage?.compacting) ? "Compacting..." : "Compact Now"}</span>
                   </button>
                 )}
 
