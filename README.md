@@ -17,7 +17,7 @@ Control plane for [karpathy/autoresearch](https://github.com/karpathy/autoresear
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/Screenshot_20260316_195109.png" alt="Screenshot 1" width="49%" />
+  <img src="screenshots/Screenshot_20260318_213154.png" alt="Screenshot 1" width="49%" />
   <img src="screenshots/Screenshot_20260316_195148.png" alt="Screenshot 2" width="49%" />
 </p>
 <p align="center">

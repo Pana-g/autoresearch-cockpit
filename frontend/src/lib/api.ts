@@ -2,6 +2,7 @@ import type {
   AgentStep,
   ChannelTypeInfo,
   CompactionInfo,
+  ContextUsage,
   Credential,
   GitLogEntry,
   NotificationChannel,
@@ -16,8 +17,6 @@ import type {
   UsageSummary,
 } from "./types";
 import { useConnectionStore } from "@/stores/connection-store";
-
-type ContextUsage = Record<string, unknown>;
 
 /** Get the active server's base URL */
 function getBase(): string {
