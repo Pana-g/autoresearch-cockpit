@@ -192,6 +192,7 @@ export type SSEEventType =
   | "training_timeout"
   | "training_completed"
   | "training_failed"
+  | "agent_timeout"
   | "auto_approve"
   | "auto_continue"
   | "run_done"
