@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Patch review improvements** — side-by-side diff view with syntax highlighting and inline accept/reject actions
 - **Model chat** — interactive chat panel to converse with the configured LLM directly from the run cockpit
 - **Multi-server management page** — full Settings → Servers page to add, edit, delete, and test multiple backend connections; switch active server from the sidebar dropdown
-- **Standalone binary distribution** — single-file PyInstaller executables for Linux x64, macOS x64, macOS arm64, and Windows x64 with embedded frontend and auto-run migrations
+- **Standalone binary distribution** — single-file PyInstaller executables for Linux x64, macOS arm64, and Windows x64 with embedded frontend and auto-run migrations
 - **GitHub Actions release pipeline** — automated cross-platform build and publish on version tags (`v*.*.*`)
 - **Frontend static serving from backend** — the backend binary serves the React frontend directly; no separate web server needed
 - **`.env.example`** — template environment file shipped in every release archive
