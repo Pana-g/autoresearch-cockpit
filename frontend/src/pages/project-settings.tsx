@@ -53,7 +53,7 @@ export default function ProjectSettingsPage() {
           Back to project
         </Link>
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 glow-teal">
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             <Settings className="h-6 w-6 text-primary" />
           </div>
           <div>
@@ -73,7 +73,7 @@ export default function ProjectSettingsPage() {
         className="space-y-5"
       >
         <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Run Defaults</h2>
-        <p className="text-[11px] text-muted-foreground/60">These settings are applied when creating new runs for this project.</p>
+        <p className="text-[11px] text-muted-foreground">These settings are applied when creating new runs for this project.</p>
 
         <div className="space-y-3">
           {/* Auto Approve */}
@@ -84,7 +84,7 @@ export default function ProjectSettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Auto Approve Patches</p>
-                <p className="text-[11px] text-muted-foreground/60">Automatically approve agent-generated patches without review</p>
+                <p className="text-[11px] text-muted-foreground">Automatically approve agent-generated patches without review</p>
               </div>
             </div>
             <Switch
@@ -101,7 +101,7 @@ export default function ProjectSettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Auto Continue</p>
-                <p className="text-[11px] text-muted-foreground/60">Automatically start next iteration after training completes</p>
+                <p className="text-[11px] text-muted-foreground">Automatically start next iteration after training completes</p>
               </div>
             </div>
             <Switch
@@ -118,12 +118,12 @@ export default function ProjectSettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Max Iterations</p>
-                <p className="text-[11px] text-muted-foreground/60">Maximum iterations per run (0 = unlimited)</p>
+                <p className="text-[11px] text-muted-foreground">Maximum iterations per run (0 = unlimited)</p>
               </div>
             </div>
             <NumberInput
               integer
-              className="h-9 w-24 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors font-mono text-right"
+              className="h-9 w-24 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors font-mono text-right"
               value={project.default_max_iterations || ""}
               placeholder="∞"
               onCommit={(val) => handleNumber("default_max_iterations", val ?? 0)}
@@ -138,11 +138,11 @@ export default function ProjectSettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Overfit Floor</p>
-                <p className="text-[11px] text-muted-foreground/60">val_bpb below this is treated as overfitting (empty = disabled)</p>
+                <p className="text-[11px] text-muted-foreground">val_bpb below this is treated as overfitting (empty = disabled)</p>
               </div>
             </div>
             <NumberInput
-              className="h-9 w-28 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors font-mono text-right"
+              className="h-9 w-28 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors font-mono text-right"
               value={project.default_overfit_floor}
               placeholder="None"
               onCommit={(val) => handleNumber("default_overfit_floor", val)}
@@ -157,11 +157,11 @@ export default function ProjectSettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Overfit Margin</p>
-                <p className="text-[11px] text-muted-foreground/60">Stop when val_bpb is within this distance above floor (empty = disabled)</p>
+                <p className="text-[11px] text-muted-foreground">Stop when val_bpb is within this distance above floor (empty = disabled)</p>
               </div>
             </div>
             <NumberInput
-              className="h-9 w-28 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors font-mono text-right"
+              className="h-9 w-28 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors font-mono text-right"
               value={project.default_overfit_margin}
               placeholder="None"
               onCommit={(val) => handleNumber("default_overfit_margin", val)}
@@ -180,7 +180,7 @@ export default function ProjectSettingsPage() {
         className="space-y-5"
       >
         <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Context Compaction</h2>
-        <p className="text-[11px] text-muted-foreground/60">Default context compaction settings for new runs. Compaction reduces prompt size by summarizing older iteration memories.</p>
+        <p className="text-[11px] text-muted-foreground">Default context compaction settings for new runs. Compaction reduces prompt size by summarizing older iteration memories.</p>
 
         <div className="space-y-3">
           {/* Auto Compact */}
@@ -191,7 +191,7 @@ export default function ProjectSettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Auto Compact</p>
-                <p className="text-[11px] text-muted-foreground/60">Automatically compact memory when context threshold is reached</p>
+                <p className="text-[11px] text-muted-foreground">Automatically compact memory when context threshold is reached</p>
               </div>
             </div>
             <Switch
@@ -208,14 +208,14 @@ export default function ProjectSettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Threshold %</p>
-                <p className="text-[11px] text-muted-foreground/60">Compact when prompt reaches this % of the model's context window</p>
+                <p className="text-[11px] text-muted-foreground">Compact when prompt reaches this % of the model's context window</p>
               </div>
             </div>
             <NumberInput
               integer
               min={10}
               max={95}
-              className="h-9 w-24 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors font-mono text-right"
+              className="h-9 w-24 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors font-mono text-right"
               value={project.default_compact_threshold_pct || ""}
               placeholder="50"
               onCommit={(val) => handleNumber("default_compact_threshold_pct", val ?? 50)}
@@ -230,13 +230,13 @@ export default function ProjectSettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Context Limit</p>
-                <p className="text-[11px] text-muted-foreground/60">Override model's context window size in tokens (0 = auto-detect from model)</p>
+                <p className="text-[11px] text-muted-foreground">Override model's context window size in tokens (0 = auto-detect from model)</p>
               </div>
             </div>
             <NumberInput
               integer
               min={0}
-              className="h-9 w-28 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors font-mono text-right"
+              className="h-9 w-28 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors font-mono text-right"
               value={project.default_context_limit || ""}
               placeholder="auto"
               onCommit={(val) => handleNumber("default_context_limit", val ?? 0)}
@@ -255,7 +255,7 @@ export default function ProjectSettingsPage() {
         className="space-y-5"
       >
         <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Project Best</h2>
-        <p className="text-[11px] text-muted-foreground/60">
+        <p className="text-[11px] text-muted-foreground">
           Select which training iteration serves as the project-level best. New runs inherit the train.py code from this iteration.
         </p>
 
@@ -273,7 +273,7 @@ export default function ProjectSettingsPage() {
                 {project.best_run_id && project.best_iteration != null && (
                   <Link
                     to={`/projects/${projectId}/runs/${project.best_run_id}`}
-                    className="text-[11px] font-mono text-muted-foreground/50 hover:text-primary/70 transition-colors"
+                    className="text-[11px] font-mono text-muted-foreground hover:text-primary/70 transition-colors"
                   >
                     run {project.best_run_id.slice(0, 8)} · iter #{project.best_iteration}
                   </Link>
@@ -283,14 +283,14 @@ export default function ProjectSettingsPage() {
           </div>
         ) : (
           <div className="glass rounded-xl px-5 py-4">
-            <p className="text-sm text-muted-foreground/50 italic">No best iteration set yet. Complete a training run to see results here.</p>
+            <p className="text-sm text-muted-foreground italic">No best iteration set yet. Complete a training run to see results here.</p>
           </div>
         )}
 
         {/* Training steps list to select from */}
         {stepsLoading ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-5 w-5 text-muted-foreground/40 animate-spin" />
+            <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
           </div>
         ) : trainingSteps && trainingSteps.length > 0 ? (
           <div className="space-y-1.5 max-h-80 overflow-y-auto">
@@ -319,7 +319,7 @@ export default function ProjectSettingsPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground/50 font-mono mt-0.5">
+                    <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                       run {step.run_id.slice(0, 8)} · iter #{step.iteration}
                       {step.commit_sha && <> · {step.commit_sha.slice(0, 7)}</>}
                     </p>
@@ -341,7 +341,7 @@ export default function ProjectSettingsPage() {
             })}
           </div>
         ) : (
-          <p className="text-[11px] text-muted-foreground/40 italic">No completed training iterations found.</p>
+          <p className="text-[11px] text-muted-foreground italic">No completed training iterations found.</p>
         )}
       </motion.section>
     </div>

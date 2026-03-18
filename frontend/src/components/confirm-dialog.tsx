@@ -21,10 +21,10 @@ interface Props {
 export function ConfirmDialog({ open, onClose, onConfirm, title, description, variant = "default", confirmLabel = "Confirm" }: Props) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md glass border-white/[6%]">
+      <DialogContent className="max-w-md glass border-border">
         <DialogHeader>
           <DialogTitle className="text-[15px] font-semibold tracking-tight">{title}</DialogTitle>
-          <DialogDescription className="text-[13px] text-muted-foreground/70">{description}</DialogDescription>
+          <DialogDescription className="text-[13px] text-muted-foreground">{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>

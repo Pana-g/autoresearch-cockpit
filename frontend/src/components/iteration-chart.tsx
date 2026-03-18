@@ -60,7 +60,7 @@ function ChartTooltip({ active, payload, visibleCount }: any) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload as ChartPoint;
   return (
-    <div className="rounded-lg border border-border/30 bg-popover/95 backdrop-blur-md px-3.5 py-2.5 shadow-xl">
+    <div className="rounded-lg border border-border bg-popover px-3.5 py-2.5 shadow-xl">
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-[10px] font-mono text-muted-foreground">Iteration</span>
         <span className="text-xs font-semibold text-foreground">#{d.iteration}</span>
@@ -80,7 +80,7 @@ function ChartTooltip({ active, payload, visibleCount }: any) {
           </div>
           {/* Show extra detail when zoomed */}
           {visibleCount != null && visibleCount <= 40 && d.status === "completed" && !d.improved && (
-            <div className="mt-1 text-[10px] text-muted-foreground/50">no improvement — reverted</div>
+            <div className="mt-1 text-[10px] text-muted-foreground">no improvement — reverted</div>
           )}
         </>
       ) : (
@@ -225,14 +225,14 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
       {/* Header */}
       <button
         onClick={toggle}
-        className="w-full flex items-center justify-between px-5 py-3 hover:bg-tint/[3%] transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between px-5 py-3 hover:bg-accent transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-3">
           <div className="h-7 w-7 rounded-lg bg-cyan-500/10 flex items-center justify-center">
             <TrendingDown className="h-3.5 w-3.5 text-cyan-400" />
           </div>
           <span className="text-sm font-medium text-foreground/90">Score Progression</span>
-          <span className="text-[11px] font-mono text-muted-foreground/50">
+          <span className="text-[11px] font-mono text-muted-foreground">
             {completedWithScore.length} evals
           </span>
           {improvements.length > 0 && (
@@ -250,9 +250,9 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
             </span>
           )}
           {collapsed ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           ) : (
-            <ChevronUp className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
           )}
         </div>
       </button>
@@ -263,7 +263,7 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
           {/* Zoom indicator */}
           {isZoomed && (
             <div className="flex items-center justify-between mb-1 px-1">
-              <span className="text-[10px] font-mono text-muted-foreground/50">
+              <span className="text-[10px] font-mono text-muted-foreground">
                 Showing iterations {visibleData[0]?.iteration}–{visibleData[visibleData.length - 1]?.iteration}
               </span>
               <button
@@ -277,8 +277,8 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
           )}
           {!isZoomed && data.length > 20 && (
             <div className="flex items-center gap-1 mb-1 px-1">
-              <Maximize2 className="h-3 w-3 text-muted-foreground/30" />
-              <span className="text-[10px] text-muted-foreground/30">
+              <Maximize2 className="h-3 w-3 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">
                 Scroll to zoom · drag handles below to pan
               </span>
             </div>

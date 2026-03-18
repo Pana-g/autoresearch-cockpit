@@ -37,11 +37,11 @@ export function UsagePanel({ runId }: { runId?: string }) {
 
       {grouped.size > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium">By Model</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">By Model</p>
           {[...grouped.entries()].map(([key, v]) => (
-            <div key={key} className="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-tint/[2%] border border-border/10">
-              <span className="font-mono truncate text-foreground/70">{key}</span>
-              <span className="text-muted-foreground/60 font-mono">
+            <div key={key} className="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-muted/50 border border-border">
+              <span className="font-mono truncate text-muted-foreground">{key}</span>
+              <span className="text-muted-foreground font-mono">
                 {v.cost > 0 ? `$${v.cost.toFixed(4)}` : "Seat"} · {v.count}
               </span>
             </div>
@@ -54,8 +54,8 @@ export function UsagePanel({ runId }: { runId?: string }) {
 
 function StatBox({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="rounded-lg bg-tint/[2%] border border-border/10 px-3 py-2.5">
-      <div className="flex items-center gap-1.5 text-muted-foreground/50 mb-1">
+    <div className="rounded-lg bg-muted/50 border border-border px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
         {icon}
         <span className="text-[10px] uppercase tracking-wider">{label}</span>
       </div>

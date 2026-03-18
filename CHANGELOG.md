@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-19
+
+### Added
+
+- **Iteration diff compare** — side-by-side diff viewer to compare agent patches between any two iterations in a run, with outcome badges (Improved / No gain / Failed)
+- **Runtime settings page** — configure timeouts, CORS, memory limits, and encryption directly from the web UI without editing `.env` or restarting
+- **Settings API** — `GET /api/settings` and `PATCH /api/settings` endpoints for runtime configuration
+
+### Changed
+
+- **SSE performance** — batched query invalidations via `requestAnimationFrame` instead of individual calls per event
+- **Reduced polling** — run status polls every 10 s (was 5 s), agent/training steps every 15 s (was 5 s)
+- **UI theme overhaul** — migrated to shadcn/ui zinc neutral palette; removed all glass/blur/grain/glow effects for a cleaner, more performant look
+- **Build output** — release binaries are now uploaded as raw executables instead of `.tar.gz` / `.zip` archives
+
+### Removed
+
+- **Authentication** — removed `AR_API_KEY` environment variable and all bearer-token middleware; the cockpit is designed for local/trusted-network use
+
 ## [0.2.0] - 2026-03-18
 
 ### Added
@@ -47,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database migrations** — Alembic-managed schema with full migration history
 - **Default project settings** — configurable defaults for run parameters and compaction settings
 
-[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Pana-g/autoresearch-cockpit/releases/tag/v0.1.0

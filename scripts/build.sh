@@ -10,8 +10,8 @@
 #   - Bun                   (https://bun.sh/)
 #
 # Output:
-#   dist/autoresearch-cockpit      — the standalone binary
-#   dist/autoresearch-cockpit.tar.gz — ready-to-ship archive
+#   dist/autoresearch-cockpit-<platform>   — the standalone binary (e.g. autoresearch-cockpit-darwin-arm64)
+#   dist/.env.example                      — template environment file
 
 set -euo pipefail
 
@@ -78,23 +78,21 @@ echo "    Binary built → backend/dist/autoresearch-cockpit"
 
 # ── Package ──────────────────────────────────────────────
 echo ""
-echo "==> Packaging release archive..."
+echo "==> Packaging release..."
 mkdir -p "$DIST"
 BINARY="$BACKEND/dist/autoresearch-cockpit"
-ARCHIVE="$DIST/autoresearch-cockpit-${PLATFORM}.tar.gz"
+OUT_BINARY="$DIST/autoresearch-cockpit-${PLATFORM}"
 
-cp "$ROOT/.env.example" "$BACKEND/dist/.env.example" 2>/dev/null || true
-
-tar -czf "$ARCHIVE" -C "$BACKEND/dist" autoresearch-cockpit .env.example 2>/dev/null || \
-  tar -czf "$ARCHIVE" -C "$BACKEND/dist" autoresearch-cockpit
+cp "$BINARY" "$OUT_BINARY"
+chmod +x "$OUT_BINARY"
+cp "$ROOT/.env.example" "$DIST/.env.example" 2>/dev/null || true
 
 echo ""
 echo "✓ Build complete!"
-echo "  Binary:  $BINARY"
-echo "  Archive: $ARCHIVE"
+echo "  Binary: $OUT_BINARY"
 echo ""
 echo "To test locally:"
 echo "  1. Start PostgreSQL:  docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres --name arc-db postgres:16"
-echo "  2. Create .env:       cp $BACKEND/dist/.env.example /tmp/arc-test/.env  (fill in AR_ENCRYPTION_KEY)"
-echo "  3. Run the binary:    $BINARY"
+echo "  2. Create .env:       cp $DIST/.env.example /tmp/arc-test/.env  (fill in AR_ENCRYPTION_KEY)"
+echo "  3. Run the binary:    $OUT_BINARY"
 echo "  4. Open browser:      http://localhost:8000"

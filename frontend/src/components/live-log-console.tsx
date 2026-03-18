@@ -34,18 +34,18 @@ export function LiveLogConsole({ onCancel }: { onCancel?: () => void }) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/20">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
         <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
           <div className="h-5 w-5 rounded-md bg-violet-500/10 flex items-center justify-center">
             <Terminal className="h-3 w-3 text-violet-400" />
           </div>
-          <span className="uppercase tracking-wider font-medium text-foreground/70">Training Output</span>
-          <span className="font-mono text-muted-foreground/50">{trainingLog.length} lines</span>
+          <span className="uppercase tracking-wider font-medium text-muted-foreground">Training Output</span>
+          <span className="font-mono text-muted-foreground">{trainingLog.length} lines</span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setAutoScroll(!autoScroll)}
-            className={`p-1 rounded-md transition-colors ${autoScroll ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-tint/[3%]"}`}
+            className={`p-1 rounded-md transition-colors ${autoScroll ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
             title={autoScroll ? "Auto-scroll ON" : "Auto-scroll OFF"}
           >
             {autoScroll ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
@@ -71,13 +71,13 @@ export function LiveLogConsole({ onCancel }: { onCancel?: () => void }) {
           className="p-4 font-mono text-[12px] leading-5 text-zinc-400 overflow-auto max-h-[500px]"
         >
           {visibleLines.length === 0 && (
-            <div className="flex items-center gap-2 text-muted-foreground/40 italic">
+            <div className="flex items-center gap-2 text-muted-foreground italic">
               <div className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse-dot" />
               Waiting for training output...
             </div>
           )}
           {trainingLog.length > MAX_VISIBLE_LINES && (
-            <div className="text-muted-foreground/30 text-[11px] mb-1">
+            <div className="text-muted-foreground text-[11px] mb-1">
               … {trainingLog.length - MAX_VISIBLE_LINES} earlier lines truncated
             </div>
           )}

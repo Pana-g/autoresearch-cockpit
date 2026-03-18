@@ -6,13 +6,28 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"/></a>
-  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.2.0-informational" alt="Version"/></a>
+  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.3.0-informational" alt="Version"/></a>
   <a href="https://github.com/Pana-g/autoresearch-cockpit/issues"><img src="https://img.shields.io/github/issues/Pana-g/autoresearch-cockpit" alt="Open Issues"/></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions Welcome"/></a>
   <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-ff69b4" alt="Code of Conduct"/></a>
 </p>
 
-Control plane for [karpathy/autoresearch](https://github.com/karpathy/autoresearch) — orchestrate AI-driven training experiments with full visibility, auditability, and control.
+Control plane for [karpathy/autoresearch](https://github.com/karpathy/autoresearch) — a web dashboard that wraps the autoresearch training loop with visibility, control, and tooling that the CLI alone doesn't provide.
+
+## What the Cockpit Adds
+
+Autoresearch runs iterative AI-driven training experiments from the command line. The Cockpit gives you a full web UI on top of that:
+
+- **Live dashboard** — watch every iteration in real time: agent reasoning, training logs, progress, and token costs stream via SSE into a single view
+- **Patch review gate** — inspect AI-generated code patches in a side-by-side syntax-highlighted diff and approve or reject them before training starts
+- **Iteration diff compare** — compare the agent's patches between any two iterations to see how its approach evolved
+- **Training loss chart** — interactive `val_bpb` chart with zoom/brush, colour-coded dots (green = improvement, red = regression), and an expandable panel
+- **Multi-provider LLM support** — swap between OpenAI, Anthropic, Google Gemini, OpenRouter, Ollama, and GitHub Copilot from the UI with dynamic model listing
+- **Notification channels** — get alerts on Discord, Telegram, Slack, or a custom webhook with per-event toggles
+- **Model chat** — talk to the configured LLM directly from the run cockpit without leaving the dashboard
+- **Multi-project & multi-server** — manage several autoresearch projects and connect to multiple backend instances from one frontend
+- **Runtime settings** — change timeouts, CORS, and other parameters from the web UI — no file edits or restarts
+- **Standalone binary** — single executable for Linux, macOS, and Windows with the React frontend embedded; no Python or Node.js required to run
 
 ## Screenshots
 
@@ -29,6 +44,7 @@ Control plane for [karpathy/autoresearch](https://github.com/karpathy/autoresear
 
 ## Table of Contents
 
+- [What the Cockpit Adds](#what-the-cockpit-adds)
 - [Quick Start](#quick-start)
 - [Setup](#setup)
   - [macOS / Linux](#macos--linux)
@@ -38,7 +54,6 @@ Control plane for [karpathy/autoresearch](https://github.com/karpathy/autoresear
   - [Windows](#running-windows)
 - [Docker (Full Stack)](#docker-full-stack)
 - [Manual Setup (No Scripts)](#manual-setup-no-scripts)
-- [Connecting to a Backend](#connecting-to-a-backend)
 - [Environment Variables](#environment-variables)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
@@ -56,12 +71,11 @@ Grab the latest pre-built binary for your platform from the [Releases page](http
 
 | Platform | File |
 |----------|------|
-| macOS (Apple Silicon) | `autoresearch-cockpit-macos-arm64.tar.gz` |
-| macOS (Intel)         | `autoresearch-cockpit-macos-x64.tar.gz`   |
-| Linux (x64)           | `autoresearch-cockpit-linux-x64.tar.gz`   |
-| Windows (x64)         | `autoresearch-cockpit-windows-x64.zip`    |
+| macOS (Apple Silicon) | `autoresearch-cockpit-macos-arm64` |
+| Linux (x64)           | `autoresearch-cockpit-linux-x64`   |
+| Windows (x64)         | `autoresearch-cockpit-windows-x64.exe` |
 
-Each archive contains a single `autoresearch-cockpit` executable (or `.exe` on Windows) and an `.env.example`. Extract it, set up your `.env`, and run the binary — no Python or Node required.
+Each release includes the standalone executable and an `.env.example` file. Download them, create a `.env` (see below), and run the binary — no Python or Node required.
 
 > PostgreSQL is still required. The quickest way: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres --name arc-db postgres:16`
 
@@ -180,7 +194,6 @@ Or create `backend/.env` manually:
 
 ```env
 AR_ENCRYPTION_KEY=<your-fernet-key>
-AR_API_KEY=<your-api-key>
 ```
 
 ### 2. Build and start
@@ -219,35 +232,9 @@ docker compose --profile full down -v
 
 The frontend can connect to any running AutoResearch Cockpit backend — local or remote.
 
-### First launch
+When you open the frontend for the first time, a **Welcome Setup** wizard asks for the backend URL (e.g. `http://localhost:8000`). Click **Test** to verify the connection, then **Connect**.
 
-When you open the frontend for the first time (no server configured), a **Welcome Setup** wizard appears automatically:
-
-1. **Server URL** — enter the full URL of the backend, e.g. `http://localhost:8000` or `http://your-server:8000`.  
-   The field pre-fills to `http://<hostname>:8000` when you're accessing the frontend from the same machine as the backend.
-2. **API Key** — enter the key that was set on the server (see below). If the backend has no API key configured, leave this blank.
-3. Click **Test** to verify the connection, then **Connect** to save and enter the app.
-
-### Where is the API key?
-
-The API key is the value of `AR_API_KEY` in `backend/.env` on the machine running the backend:
-
-```env
-# backend/.env
-AR_API_KEY=your-secret-key-here
-```
-
-- If `AR_API_KEY` is **empty or not set**, authentication is disabled — the backend accepts all requests.
-- If `AR_API_KEY` is **set**, every request must include it. Copy the exact value from `.env` and paste it into the API Key field in the setup wizard (or in **Settings → Servers**).
-
-> **Tip:** When using the standalone binary, the `.env` file lives next to the executable. Edit it before starting, or set `AR_API_KEY` as an environment variable.
-
-### Managing servers after setup
-
-You can add, edit, or remove server connections at any time:
-
-- **Settings → Servers** — full management page for all configured backends
-- **Server switcher** — the dropdown at the top of the left sidebar lets you switch the active server instantly
+You can manage server connections at any time from **Settings → Servers** or the sidebar server switcher.
 
 ---
 
@@ -305,12 +292,13 @@ Set in `backend/.env` (auto-generated by the setup scripts):
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `AR_ENCRYPTION_KEY` | — (required) | Fernet key for encrypting API credentials |
-| `AR_API_KEY` | — (optional) | API key for remote access; if empty, auth is disabled |
 | `AR_DATABASE_URL` | `postgresql+asyncpg://postgres:postgres@localhost:5432/autoresearch` | Async DB connection string |
 | `AR_DATABASE_URL_SYNC` | `postgresql://postgres:postgres@localhost:5432/autoresearch` | Sync DB connection (used by Alembic) |
 | `AR_DEFAULT_TRAINING_TIMEOUT_SECONDS` | `720` | Training subprocess timeout (seconds) |
 | `AR_DEFAULT_AGENT_TIMEOUT_SECONDS` | `300` | Agent LLM call timeout (seconds) |
 | `AR_CORS_ORIGINS` | `["*"]` | Allowed CORS origins |
+
+All timeout and CORS settings can also be changed at runtime via the **Settings** page in the web UI.
 
 ---
 
@@ -350,10 +338,12 @@ Set in `backend/.env` (auto-generated by the setup scripts):
         │   ├── welcome-setup.tsx     # First-launch server connection wizard
         │   ├── server-switcher.tsx   # Sidebar server dropdown
         │   ├── iteration-chart.tsx   # val_bpb training loss chart
+        │   ├── diff-compare-modal.tsx # Iteration diff compare viewer
         │   ├── live-log-console.tsx  # Real-time training log viewer
         │   ├── patch-review.tsx      # Diff review with accept/reject
         │   └── model-chat.tsx        # Inline LLM chat panel
         └── pages/
+            ├── settings.tsx          # Runtime settings configuration
             ├── servers.tsx           # Settings → Servers management
             └── channels.tsx          # Notification channel settings
 ```

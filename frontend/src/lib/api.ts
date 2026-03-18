@@ -23,23 +23,14 @@ function getBase(): string {
   return useConnectionStore.getState().getActive().url;
 }
 
-/** Get the active server's API key (empty if none) */
-function getApiKey(): string {
-  return useConnectionStore.getState().getActive().apiKey;
-}
-
-/** Build headers with optional Bearer auth */
-function authHeaders(extra?: Record<string, string>): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json", ...extra };
-  const key = getApiKey();
-  if (key) headers["Authorization"] = `Bearer ${key}`;
-  return headers;
+function headers(extra?: Record<string, string>): Record<string, string> {
+  return { "Content-Type": "application/json", ...extra };
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${getBase()}${path}`, {
     ...init,
-    headers: authHeaders(init?.headers as Record<string, string>),
+    headers: headers(init?.headers as Record<string, string>),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -192,7 +183,7 @@ export const providers = {
   }) =>
     fetch(`${getBase()}/providers/chat`, {
       method: "POST",
-      headers: authHeaders(),
+      headers: headers(),
       body: JSON.stringify(body),
     }),
 };
@@ -272,21 +263,42 @@ export const channels = {
   validate: (id: string) => request<{ valid: boolean; error?: string }>(`/channels/${id}/validate`, { method: "POST" }),
 };
 
-/* ── SSE helpers ──────────────────────────────────────── */
+/* ── Runtime Settings ─────────────────────────────────── */
 
-/** Build the SSE URL for a run, including ?token= if auth is configured */
-export function getSSEUrl(runId: string): string {
-  const base = getBase();
-  const key = getApiKey();
-  const url = `${base}/runs/${runId}/events`;
-  return key ? `${url}?token=${encodeURIComponent(key)}` : url;
+export interface RuntimeSettings {
+  default_training_timeout_seconds: number;
+  default_agent_inactivity_timeout: number;
+  max_run_memory_records: number;
+  cors_origins: string[];
+  encryption_key_set: boolean;
 }
 
-/** Check if a server requires auth and if the key is valid */
-export async function checkAuth(serverUrl: string, apiKey: string): Promise<{ auth_required: boolean; authenticated: boolean }> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
-  const res = await fetch(`${serverUrl}/auth/check`, { headers });
-  if (!res.ok) throw new Error(`Server unreachable: ${res.status}`);
-  return res.json();
+export interface RuntimeSettingsUpdate {
+  default_training_timeout_seconds?: number;
+  default_agent_inactivity_timeout?: number;
+  max_run_memory_records?: number;
+  encryption_key?: string;
+}
+
+export const runtimeSettings = {
+  get: () => request<RuntimeSettings>("/settings"),
+  update: (body: RuntimeSettingsUpdate) =>
+    request<RuntimeSettings>("/settings", { method: "PATCH", body: JSON.stringify(body) }),
+};
+
+/* ── SSE helpers ──────────────────────────────────────── */
+
+/** Build the SSE URL for a run */
+export function getSSEUrl(runId: string): string {
+  return `${getBase()}/runs/${runId}/events`;
+}
+
+/** Check if the server is reachable */
+export async function checkConnection(serverUrl: string): Promise<{ reachable: boolean }> {
+  try {
+    const res = await fetch(`${serverUrl}/health`);
+    return { reachable: res.ok };
+  } catch {
+    return { reachable: false };
+  }
 }

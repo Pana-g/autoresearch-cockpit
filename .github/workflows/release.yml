@@ -47,19 +47,17 @@ jobs:
           - os: ubuntu-latest
             platform: linux-x64
             artifact: autoresearch-cockpit
-            archive_cmd: tar -czf
-            archive_ext: .tar.gz
+            ext: ""
 
-          - os: macos-latest      # Apple Silicon arm64 (runs on Intel too via Rosetta 2)
+          - os: macos-latest
             platform: macos-arm64
             artifact: autoresearch-cockpit
-            archive_cmd: tar -czf
-            archive_ext: .tar.gz
+            ext: ""
 
           - os: windows-latest
             platform: windows-x64
             artifact: autoresearch-cockpit.exe
-            archive_ext: .zip
+            ext: ".exe"
 
     steps:
       - uses: actions/checkout@v4
@@ -104,36 +102,22 @@ jobs:
           cd backend
           uv run pyinstaller autoresearch-cockpit.spec --noconfirm --clean
 
-      - name: Package release (Linux/macOS)
+      - name: Rename binary for release (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          cp .env.example backend/dist/.env.example 2>/dev/null || true
-          tar -czf autoresearch-cockpit-${{ matrix.platform }}.tar.gz \
-            -C backend/dist autoresearch-cockpit \
-            $([ -f backend/dist/.env.example ] && echo ".env.example" || echo "")
+          cp backend/dist/${{ matrix.artifact }} autoresearch-cockpit-${{ matrix.platform }}
+          chmod +x autoresearch-cockpit-${{ matrix.platform }}
 
-      - name: Package release (Windows)
+      - name: Rename binary for release (Windows)
         if: runner.os == 'Windows'
         run: |
-          if (Test-Path .env.example) { Copy-Item .env.example backend\dist\.env.example }
-          $files = @("backend\dist\autoresearch-cockpit.exe")
-          if (Test-Path "backend\dist\.env.example") { $files += "backend\dist\.env.example" }
-          Compress-Archive -Path $files -DestinationPath "autoresearch-cockpit-${{ matrix.platform }}.zip" -Force
+          Copy-Item "backend\dist\${{ matrix.artifact }}" "autoresearch-cockpit-${{ matrix.platform }}.exe"
 
-      - name: Upload binary artifact (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.platform }}
-          path: autoresearch-cockpit-${{ matrix.platform }}.tar.gz
-          retention-days: 7
-
-      - name: Upload binary artifact (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ matrix.platform }}
-          path: autoresearch-cockpit-${{ matrix.platform }}.zip
+          path: autoresearch-cockpit-${{ matrix.platform }}${{ matrix.ext }}
           retention-days: 7
 
   # ── 3. Create GitHub release and attach all artifacts ───
@@ -156,6 +140,9 @@ jobs:
 
       - name: List artifacts
         run: ls -lh release-artifacts/
+
+      - name: Copy .env.example into release artifacts
+        run: cp .env.example release-artifacts/.env.example 2>/dev/null || true
 
       - name: Determine release tag
         id: tag

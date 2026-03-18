@@ -35,7 +35,7 @@ export function PatchReview({ step, originalCode, onApprove, onReject, onEdit, t
             </div>
             <div>
               <p className="text-sm font-semibold">Patch Review — Iteration {step.iteration}</p>
-              <p className="text-[11px] text-muted-foreground/60 font-mono">{step.provider}/{step.model}</p>
+              <p className="text-[11px] text-muted-foreground font-mono">{step.provider}/{step.model}</p>
             </div>
           </div>
           {tokenUsage && (
@@ -52,16 +52,16 @@ export function PatchReview({ step, originalCode, onApprove, onReject, onEdit, t
       <div className="px-5 pb-5 space-y-4">
         {/* Rationale */}
         {step.rationale && (
-          <div className="rounded-lg bg-tint/[2%] border border-border/20 p-4 text-sm leading-relaxed">
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-2 font-medium">Agent Rationale</p>
-            <p className="text-foreground/80 whitespace-pre-wrap">{step.rationale}</p>
+          <div className="rounded-lg bg-muted/50 border border-border p-4 text-sm leading-relaxed">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-medium">Agent Rationale</p>
+            <p className="text-foreground whitespace-pre-wrap">{step.rationale}</p>
           </div>
         )}
 
         {/* Diff / Editor */}
         {editing ? (
           <div className="monaco-container">
-            <Suspense fallback={<div className="h-96 flex items-center justify-center text-muted-foreground/40 text-sm">Loading editor...</div>}>
+            <Suspense fallback={<div className="h-96 flex items-center justify-center text-muted-foreground text-sm">Loading editor...</div>}>
               <MonacoEditor
                 height="400px"
                 language="python"
@@ -73,8 +73,8 @@ export function PatchReview({ step, originalCode, onApprove, onReject, onEdit, t
             </Suspense>
           </div>
         ) : (
-          <div className="rounded-lg overflow-hidden border border-border/20">
-            <Suspense fallback={<div className="h-60 flex items-center justify-center text-muted-foreground/40 text-sm">Loading diff...</div>}>
+          <div className="rounded-lg overflow-hidden border border-border">
+            <Suspense fallback={<div className="h-60 flex items-center justify-center text-muted-foreground text-sm">Loading diff...</div>}>
               <ReactDiffViewer
                 oldValue={originalCode ?? ""}
                 newValue={patchedCode}
@@ -118,7 +118,7 @@ export function PatchReview({ step, originalCode, onApprove, onReject, onEdit, t
                   setEditing(true);
                 }
               }}
-              className="gap-2 border-border/40 hover:border-primary/30 hover:text-primary active:scale-95 transition-all"
+              className="gap-2 border-border hover:border-primary/30 hover:text-primary active:scale-95 transition-all"
             >
               <Pencil className="h-4 w-4" />
               {editing ? "Save & Apply" : "Edit"}

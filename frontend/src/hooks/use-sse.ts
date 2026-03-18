@@ -11,11 +11,41 @@ export function useRunSSE(projectId: string, runId: string) {
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryDelay = useRef(1000);
 
+  // Batch invalidation: collect keys and flush once per frame
+  const pendingInvalidations = useRef<Set<string>>(new Set());
+  const rafScheduled = useRef(false);
+
+  function scheduleInvalidation(...keys: string[]) {
+    for (const k of keys) pendingInvalidations.current.add(k);
+    if (!rafScheduled.current) {
+      rafScheduled.current = true;
+      requestAnimationFrame(() => {
+        rafScheduled.current = false;
+        const keysToInvalidate = Array.from(pendingInvalidations.current);
+        pendingInvalidations.current.clear();
+
+        const keyMap: Record<string, unknown[]> = {
+          run: ["runs", projectId, runId],
+          "agent-steps": ["agent-steps", runId],
+          "training-steps": ["training-steps", runId],
+          "chart-data": ["chart-data", runId],
+          "git-log": ["git-log", runId],
+          usage: ["usage", runId],
+          "usage-summary": ["usage-summary", runId],
+          compaction: ["compaction", runId],
+        };
+
+        for (const k of keysToInvalidate) {
+          const queryKey = keyMap[k];
+          if (queryKey) qc.invalidateQueries({ queryKey });
+        }
+      });
+    }
+  }
+
   useEffect(() => {
     if (!runId) return;
 
-    // Access store actions via getState() to keep a stable dependency array
-    // and avoid SSE reconnection storms on every re-render.
     const ui = () => useUIStore.getState();
 
     function connect() {
@@ -37,7 +67,7 @@ export function useRunSSE(projectId: string, runId: string) {
 
         switch (msg.event) {
           case "state_change":
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            scheduleInvalidation("run");
             break;
           case "agent_streaming_start":
             ui().clearAgentStream();
@@ -51,7 +81,7 @@ export function useRunSSE(projectId: string, runId: string) {
             break;
           case "agent_streaming_end":
             ui().setAgentPhase("idle");
-            qc.invalidateQueries({ queryKey: ["agent-steps", runId] });
+            scheduleInvalidation("agent-steps");
             break;
           case "agent_snapshot":
             ui().setAgentPhase((msg.data?.phase as "thinking" | "coding") ?? "thinking");
@@ -61,15 +91,13 @@ export function useRunSSE(projectId: string, runId: string) {
             }
             break;
           case "patch_ready":
-            qc.invalidateQueries({ queryKey: ["agent-steps", runId] });
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            scheduleInvalidation("agent-steps", "run");
             break;
           case "patch_applied":
-            qc.invalidateQueries({ queryKey: ["git-log", runId] });
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            scheduleInvalidation("git-log", "run");
             break;
           case "patch_rejected":
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            scheduleInvalidation("run");
             break;
           case "training_started":
             ui().setTrainingStarted(msg.data?.started_at as string | undefined);
@@ -83,37 +111,30 @@ export function useRunSSE(projectId: string, runId: string) {
           case "training_completed":
             ui().clearTrainingLog();
             ui().clearTrainingStarted();
-            qc.invalidateQueries({ queryKey: ["training-steps", runId] });
-            qc.invalidateQueries({ queryKey: ["chart-data", runId] });
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
-            qc.invalidateQueries({ queryKey: ["usage", runId] });
-            qc.invalidateQueries({ queryKey: ["usage-summary", runId] });
+            scheduleInvalidation("training-steps", "chart-data", "run", "usage", "usage-summary");
             break;
           case "training_failed":
           case "training_timeout":
             ui().clearTrainingLog();
             ui().clearTrainingStarted();
-            qc.invalidateQueries({ queryKey: ["training-steps", runId] });
-            qc.invalidateQueries({ queryKey: ["chart-data", runId] });
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            scheduleInvalidation("training-steps", "chart-data", "run");
             break;
           case "agent_timeout":
             ui().clearAgentStream();
             ui().setAgentPhase("idle");
-            qc.invalidateQueries({ queryKey: ["agent-steps", runId] });
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            scheduleInvalidation("agent-steps", "run");
             break;
           case "auto_approve":
           case "auto_continue":
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            scheduleInvalidation("run");
             break;
           case "run_done":
           case "run_paused":
           case "run_canceled":
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            scheduleInvalidation("run");
             break;
           case "error":
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            scheduleInvalidation("run");
             if (msg.data?.message) {
               toast.error("Run error", {
                 description: String(msg.data.message).slice(0, 200),
@@ -132,8 +153,7 @@ export function useRunSSE(projectId: string, runId: string) {
             break;
           }
           case "compaction_done":
-            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
-            qc.invalidateQueries({ queryKey: ["compaction", runId] });
+            scheduleInvalidation("run", "compaction");
             toast.success("Context compacted", {
               description: `Memory compacted up to iteration ${msg.data?.compacted_up_to}`,
               duration: 5000,

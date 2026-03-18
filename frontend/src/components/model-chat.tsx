@@ -159,7 +159,7 @@ export function ModelChat({ provider, model, credentialId }: Props) {
           >
             <div className="rounded-xl border border-violet-500/20 bg-black/20 overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-3 py-2 border-b border-border/20 bg-violet-500/[4%]">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-violet-500/[4%]">
                 <div className="flex items-center gap-2">
                   <Bot className="h-3.5 w-3.5 text-violet-400" />
                   <span className="text-[11px] font-medium text-violet-300/80">
@@ -168,7 +168,7 @@ export function ModelChat({ provider, model, credentialId }: Props) {
                 </div>
                 <button
                   onClick={() => setOpen(false)}
-                  className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground/60 transition-colors"
+                  className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-muted-foreground transition-colors"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -181,8 +181,8 @@ export function ModelChat({ provider, model, credentialId }: Props) {
               >
                 {messages.length === 0 && (
                   <div className="text-center py-6">
-                    <Bot className="h-6 w-6 text-muted-foreground/20 mx-auto mb-2" />
-                    <p className="text-[11px] text-muted-foreground/30">
+                    <Bot className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-[11px] text-muted-foreground">
                       Send a message to test the model
                     </p>
                   </div>
@@ -201,8 +201,8 @@ export function ModelChat({ provider, model, credentialId }: Props) {
                     <div
                       className={`rounded-lg px-3 py-2 text-xs leading-relaxed max-w-[85%] ${
                         msg.role === "user"
-                          ? "bg-primary/15 text-foreground/80 border border-primary/20"
-                          : "bg-tint/[3%] text-foreground/70 border border-border/20"
+                          ? "bg-primary/15 text-foreground border border-primary/20"
+                          : "bg-muted/50 text-muted-foreground border border-border"
                       }`}
                     >
                       <p className="whitespace-pre-wrap break-words">
@@ -222,7 +222,7 @@ export function ModelChat({ provider, model, credentialId }: Props) {
               </div>
 
               {/* Input */}
-              <div className="border-t border-border/20 p-2 flex items-end gap-2">
+              <div className="border-t border-border p-2 flex items-end gap-2">
                 <textarea
                   ref={inputRef}
                   value={input}
@@ -231,7 +231,7 @@ export function ModelChat({ provider, model, credentialId }: Props) {
                   placeholder="Type a message..."
                   rows={1}
                   disabled={streaming}
-                  className="flex-1 bg-transparent text-xs text-foreground/80 placeholder:text-muted-foreground/30 px-2 py-1.5 resize-none focus:outline-none font-mono leading-relaxed disabled:opacity-50"
+                  className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground px-2 py-1.5 resize-none focus:outline-none font-mono leading-relaxed disabled:opacity-50"
                 />
                 {streaming ? (
                   <button

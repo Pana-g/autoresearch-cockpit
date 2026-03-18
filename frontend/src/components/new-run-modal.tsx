@@ -59,10 +59,10 @@ export function NewRunModal({ open, onOpenChange, projectId: initialProjectId }:
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
-      <DialogContent className="glass border-border/50 sm:max-w-lg overflow-y-auto max-h-[85vh]">
+      <DialogContent className="glass border-border sm:max-w-lg overflow-y-auto max-h-[85vh]">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center glow-teal">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
               <Rocket className="h-4.5 w-4.5 text-primary" />
             </div>
             <div>
@@ -80,7 +80,7 @@ export function NewRunModal({ open, onOpenChange, projectId: initialProjectId }:
             <div>
               <label className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5 block font-medium">Project</label>
               <Select value={projectId} onValueChange={(v) => v && setProjectId(v)}>
-                <SelectTrigger className="h-9 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors">
+                <SelectTrigger className="h-9 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors">
                   <SelectValue placeholder="Select a project">
                     {projects?.find((p) => p.id === projectId)?.name ?? "Select a project"}
                   </SelectValue>
@@ -112,7 +112,7 @@ export function NewRunModal({ open, onOpenChange, projectId: initialProjectId }:
             <div className="flex items-center gap-2">
               <NumberInput
                 integer
-                className="h-9 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors font-mono"
+                className="h-9 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors font-mono"
                 value={maxIterations || ""}
                 placeholder="Unlimited"
                 onCommit={(val) => setMaxIterations(val ?? 0)}
@@ -124,7 +124,7 @@ export function NewRunModal({ open, onOpenChange, projectId: initialProjectId }:
           <div className="sep-gradient" />
 
           <Button
-            className="w-full gap-2 h-10 bg-primary/90 hover:bg-primary text-primary-foreground shadow-lg shadow-primary/10 active:scale-[0.98] transition-all"
+            className="w-full gap-2 h-10 bg-primary/90 hover:bg-primary text-primary-foreground shadow-sm active:scale-[0.98] transition-all"
             disabled={!projectId || !provider || !model || createRun.isPending}
             onClick={handleCreate}
           >

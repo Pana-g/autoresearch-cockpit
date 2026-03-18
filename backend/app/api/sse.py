@@ -1,27 +1,18 @@
 """SSE streaming endpoint — one channel per run."""
 
 import asyncio
-import hmac
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter
 from sse_starlette.sse import EventSourceResponse
 
-from app.config import settings
 from app.services.event_bus import subscribe, unsubscribe
 
 router = APIRouter(tags=["sse"])
 
 
 @router.get("/runs/{run_id}/events")
-async def run_events(run_id: str, token: str | None = Query(default=None)):
-    """SSE endpoint — streams all events for a given run.
-
-    EventSource doesn't support custom headers, so accept the API key
-    via ?token= query parameter when auth is enabled.
-    """
-    if settings.api_key:
-        if not token or not hmac.compare_digest(token, settings.api_key):
-            raise HTTPException(status_code=401, detail="Invalid or missing API key")
+async def run_events(run_id: str):
+    """SSE endpoint — streams all events for a given run."""
 
     async def event_generator():
         q = await subscribe(run_id)

@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { formatDistanceToNow } from "@/lib/format";
-import { GitCommit, Bot, Cpu, Loader2, RotateCcw, History, Trophy, ChevronRight, ChevronsUpDown } from "lucide-react";
+import { GitCommit, Bot, Cpu, Loader2, RotateCcw, History, Trophy, ChevronRight, ChevronsUpDown, GitCompareArrows } from "lucide-react";
 import type { AgentStep, TrainingStep } from "@/lib/types";
 
 /* ── Types ─────────────────────────────────────────────── */
@@ -20,6 +20,7 @@ interface Props {
   onSelect: (id: string, type: "agent" | "training") => void;
   onRestartFromIteration?: (iteration: number) => void;
   onSetProjectBest?: (trainingStepId: string) => void;
+  onCompare?: () => void;
   hasMore?: boolean;
   isFetchingMore?: boolean;
   onLoadMore?: () => void;
@@ -29,11 +30,12 @@ interface Props {
 
 function deriveGroupStatus(agent: AgentStep | null, training: TrainingStep | null): IterationGroup["status"] {
   if (agent?.status === "running" || training?.status === "running") return "running";
-  if (agent?.status === "failed" || training?.status === "failed") return "failed";
+  if (agent?.status === "failed" || agent?.status === "timeout" || training?.status === "failed") return "failed";
   if (training?.status === "completed") return "completed";
   if (agent?.status === "completed") return "completed";
-  // Agent is working (pending/queued) — treat as running
-  return "running";
+  // Agent is pending/queued — treat as running
+  if (agent?.status === "pending") return "running";
+  return "failed";
 }
 
 function groupByIteration(agentSteps: AgentStep[], trainingSteps: TrainingStep[]): IterationGroup[] {
@@ -93,7 +95,7 @@ const STATUS_COLOR: Record<IterationGroup["status"], string> = {
 
 /* ── Component ─────────────────────────────────────────── */
 
-export function StepTimeline({ agentSteps, trainingSteps, selectedId, onSelect, onRestartFromIteration, onSetProjectBest, hasMore, isFetchingMore, onLoadMore }: Props) {
+export function StepTimeline({ agentSteps, trainingSteps, selectedId, onSelect, onRestartFromIteration, onSetProjectBest, onCompare, hasMore, isFetchingMore, onLoadMore }: Props) {
   const groups = useMemo(() => groupByIteration(agentSteps, trainingSteps), [agentSteps, trainingSteps]);
   const totalSteps = agentSteps.length + trainingSteps.length;
   const [expandedSet, setExpandedSet] = useState<Set<number>>(new Set());
@@ -132,21 +134,32 @@ export function StepTimeline({ agentSteps, trainingSteps, selectedId, onSelect, 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-border/20 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Timeline</p>
-          <p className="text-[10px] text-muted-foreground/50 font-mono mt-0.5">
+          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
             {groups.length} iteration{groups.length !== 1 ? "s" : ""} · {totalSteps} steps
           </p>
         </div>
         {groups.length > 0 && (
-          <button
-            onClick={toggleAll}
-            className="h-6 w-6 rounded-md flex items-center justify-center hover:bg-tint/[5%] text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-            title={allExpanded ? "Collapse all" : "Expand all"}
-          >
-            <ChevronsUpDown className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-0.5">
+            {onCompare && agentSteps.filter((s) => s.patch).length >= 2 && (
+              <button
+                onClick={onCompare}
+                className="h-6 w-6 rounded-md flex items-center justify-center hover:bg-accent text-muted-foreground hover:text-cyan-400 transition-colors"
+                title="Compare iterations"
+              >
+                <GitCompareArrows className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              onClick={toggleAll}
+              className="h-6 w-6 rounded-md flex items-center justify-center hover:bg-accent text-muted-foreground hover:text-muted-foreground transition-colors"
+              title={allExpanded ? "Collapse all" : "Expand all"}
+            >
+              <ChevronsUpDown className="h-3.5 w-3.5" />
+            </button>
+          </div>
         )}
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">
@@ -165,12 +178,12 @@ export function StepTimeline({ agentSteps, trainingSteps, selectedId, onSelect, 
           ))}
           {hasMore && (
             <div ref={sentinelRef} className="flex items-center justify-center py-4">
-              {isFetchingMore && <Loader2 className="h-4 w-4 text-muted-foreground/40 animate-spin" />}
+              {isFetchingMore && <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />}
             </div>
           )}
           {groups.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-xs text-muted-foreground/40 italic">No steps yet</p>
+              <p className="text-xs text-muted-foreground italic">No steps yet</p>
             </div>
           )}
         </div>
@@ -220,20 +233,20 @@ function IterationSection({
       <div className={`rounded-lg transition-colors duration-150 ${
         isRestarted
           ? "bg-amber-500/[3%]"
-          : "hover:bg-tint/[3%]"
+          : "hover:bg-accent"
       }`}>
         <button
           onClick={onToggle}
           className="w-full flex items-center gap-2 px-2.5 py-2 text-left"
         >
           {/* Chevron */}
-          <ChevronRight className={`h-3 w-3 text-muted-foreground/30 shrink-0 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
+          <ChevronRight className={`h-3 w-3 text-muted-foreground shrink-0 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
 
           {/* Status dot */}
           <StatusIndicator status={group.status} />
 
           {/* Iteration label */}
-          <span className="text-[11px] font-semibold tracking-tight text-foreground/80">
+          <span className="text-[11px] font-semibold tracking-tight text-foreground">
             #{group.iteration}
           </span>
 
@@ -268,7 +281,7 @@ function IterationSection({
                   onRestartFromIteration(group.iteration);
                 }}
                 title={`Restart from iteration ${group.iteration}`}
-                className="h-5 w-5 rounded flex items-center justify-center hover:bg-amber-500/20 text-muted-foreground/40 hover:text-amber-400 transition-colors cursor-pointer"
+                className="h-5 w-5 rounded flex items-center justify-center hover:bg-amber-500/20 text-muted-foreground hover:text-amber-400 transition-colors cursor-pointer"
               >
                 <RotateCcw className="h-3 w-3" />
               </div>
@@ -280,7 +293,7 @@ function IterationSection({
                   onSetProjectBest(group.training!.id);
                 }}
                 title={`Set as project best (${score.toFixed(4)})`}
-                className="h-5 w-5 rounded flex items-center justify-center hover:bg-emerald-500/20 text-muted-foreground/40 hover:text-emerald-400 transition-colors cursor-pointer"
+                className="h-5 w-5 rounded flex items-center justify-center hover:bg-emerald-500/20 text-muted-foreground hover:text-emerald-400 transition-colors cursor-pointer"
               >
                 <Trophy className="h-3 w-3" />
               </div>
@@ -356,7 +369,7 @@ function StepRow({
       className={`w-full text-left rounded-md px-2.5 py-1.5 transition-all duration-150 flex items-center gap-2 ${
         selected
           ? "bg-primary/8 ring-1 ring-primary/20"
-          : "hover:bg-tint/[4%]"
+          : "hover:bg-accent"
       }`}
     >
       <div className={`h-4.5 w-4.5 rounded flex items-center justify-center shrink-0 ${
@@ -368,17 +381,17 @@ function StepRow({
         }
       </div>
 
-      <span className="text-[10px] font-medium text-foreground/60">
+      <span className="text-[10px] font-medium text-muted-foreground">
         {isAgent ? "Agent" : "Train"}
       </span>
       <StatusDot status={status} />
 
       {isAgent && model && (
-        <span className="text-[10px] font-mono text-muted-foreground/35 truncate">{model}</span>
+        <span className="text-[10px] font-mono text-muted-foreground truncate">{model}</span>
       )}
 
       {isAgent && promptTokens != null && completionTokens != null && (
-        <span className="text-[9px] font-mono text-muted-foreground/30 shrink-0">
+        <span className="text-[9px] font-mono text-muted-foreground shrink-0">
           {formatTokens(promptTokens)}↑ {formatTokens(completionTokens)}↓
         </span>
       )}
@@ -392,14 +405,14 @@ function StepRow({
       )}
 
       {!isAgent && commitSha && (
-        <span className="text-[9px] font-mono text-muted-foreground/25 flex items-center gap-0.5 shrink-0">
+        <span className="text-[9px] font-mono text-muted-foreground flex items-center gap-0.5 shrink-0">
           <GitCommit className="h-2.5 w-2.5" />
           {commitSha.slice(0, 7)}
         </span>
       )}
 
       {createdAt && (
-        <span className="text-[9px] text-muted-foreground/25">{formatDistanceToNow(createdAt)}</span>
+        <span className="text-[9px] text-muted-foreground">{formatDistanceToNow(createdAt)}</span>
       )}
     </button>
   );

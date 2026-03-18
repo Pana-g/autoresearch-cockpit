@@ -18,6 +18,7 @@ import { AgentThinkingView, PhaseIndicator as AgentPhaseIndicator } from "@/comp
 import { TrainingInfoCard } from "@/components/training-info-card";
 import { ModelSelector } from "@/components/model-selector";
 import { CompactionModal } from "@/components/compaction-modal";
+import { DiffCompareModal } from "@/components/diff-compare-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -53,6 +54,7 @@ export default function RunCockpitPage() {
   const [confirmAction, setConfirmAction] = useState<{ action: RunAction; title: string; desc: string } | null>(null);
   const [restartIteration, setRestartIteration] = useState<number | null>(null);
   const [compactionModalOpen, setCompactionModalOpen] = useState(false);
+  const [diffCompareOpen, setDiffCompareOpen] = useState(false);
 
   const handleAction = useCallback(
     (action: RunAction) => {
@@ -89,21 +91,21 @@ export default function RunCockpitPage() {
   return (
     <div className="flex h-full">
       {/* ── Left Panel: Config Summary ──────────────────── */}
-      <div className="w-72 border-r border-border/30 flex flex-col shrink-0 overflow-y-auto" style={{ background: "var(--sidebar)" }}>
+      <div className="w-72 border-r border-border flex flex-col shrink-0 overflow-y-auto" style={{ background: "var(--sidebar)" }}>
         <div className="p-5 space-y-5">
           {/* Run Header */}
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <StatusBadge state={state} />
             </div>
-            <p className="text-[11px] font-mono text-muted-foreground/60">{runId!.slice(0, 8)}</p>
+            <p className="text-[11px] font-mono text-muted-foreground">{runId!.slice(0, 8)}</p>
           </div>
 
           <div className="sep-gradient" />
 
           {/* Model Selector */}
           <div>
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-2">Model</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Model</p>
             <ModelSelector
               provider={run.provider}
               model={run.model}
@@ -123,7 +125,7 @@ export default function RunCockpitPage() {
 
           {/* Stats */}
           <div className="space-y-1">
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-2">Metrics</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Metrics</p>
             <StatRow icon={<Hash className="h-3.5 w-3.5" />} label="Iteration" value={run.max_iterations > 0 ? `${run.iteration} / ${run.max_iterations}` : String(run.iteration)} />
             <StatRow icon={<Target className="h-3.5 w-3.5 text-emerald-400" />} label="Best val_bpb" value={run.best_val_bpb?.toFixed(4) ?? "—"} highlight={!!run.best_val_bpb} />
             {lastTraining?.val_bpb != null && (
@@ -135,7 +137,7 @@ export default function RunCockpitPage() {
 
           {/* Action Buttons */}
           <div className="space-y-1.5">
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-2">Actions</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Actions</p>
             {state === "idle" && (
               <ActionBtn icon={<Play />} label="Start Run" onClick={() => handleAction("start")} accent="emerald" />
             )}
@@ -199,8 +201,8 @@ export default function RunCockpitPage() {
           {/* Automation Toggles */}
           {!["done", "failed", "canceled"].includes(state) && (
             <div className="space-y-2.5">
-              <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-2">Automation</p>
-              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-tint/[2%] transition-colors">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Automation</p>
+              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent transition-colors">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
                   <span>Auto-approve</span>
@@ -210,7 +212,7 @@ export default function RunCockpitPage() {
                   onCheckedChange={(checked) => updateSettings.mutate({ auto_approve: checked })}
                 />
               </div>
-              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-tint/[2%] transition-colors">
+              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent transition-colors">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <FastForward className="h-3.5 w-3.5 text-cyan-400" />
                   <span>Auto-continue</span>
@@ -220,14 +222,14 @@ export default function RunCockpitPage() {
                   onCheckedChange={(checked) => updateSettings.mutate({ auto_continue: checked })}
                 />
               </div>
-              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-tint/[2%] transition-colors">
+              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent transition-colors">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Timer className="h-3.5 w-3.5 text-violet-400" />
                   <span>Max iterations</span>
                 </div>
                 <NumberInput
                   integer
-                  className="w-16 h-7 text-xs text-right font-mono bg-tint/[3%] border-border/40"
+                  className="w-16 h-7 text-xs text-right font-mono bg-muted/50 border-border"
                   value={run.max_iterations || ""}
                   placeholder="∞"
                   onCommit={(val) => {
@@ -235,7 +237,7 @@ export default function RunCockpitPage() {
                   }}
                 />
               </div>
-              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-tint/[2%] transition-colors">
+              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent transition-colors">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <TrendingDown className="h-3.5 w-3.5 text-red-400" />
                   <span>Overfit floor</span>
@@ -243,7 +245,7 @@ export default function RunCockpitPage() {
                 <NumberInput
                   step={0.001}
                   min={0}
-                  className="w-20 h-7 text-xs text-right font-mono bg-tint/[3%] border-border/40"
+                  className="w-20 h-7 text-xs text-right font-mono bg-muted/50 border-border"
                   value={run.overfit_floor}
                   placeholder="none"
                   onCommit={(val) => {
@@ -251,7 +253,7 @@ export default function RunCockpitPage() {
                   }}
                 />
               </div>
-              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-tint/[2%] transition-colors">
+              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent transition-colors">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Target className="h-3.5 w-3.5 text-amber-400" />
                   <span>Overfit margin</span>
@@ -259,7 +261,7 @@ export default function RunCockpitPage() {
                 <NumberInput
                   step={0.01}
                   min={0}
-                  className="w-20 h-7 text-xs text-right font-mono bg-tint/[3%] border-border/40"
+                  className="w-20 h-7 text-xs text-right font-mono bg-muted/50 border-border"
                   value={run.overfit_margin}
                   placeholder="none"
                   onCommit={(val) => {
@@ -268,14 +270,14 @@ export default function RunCockpitPage() {
                 />
               </div>
 
-              <div className="mt-3 pt-3 border-t border-border/20 space-y-2.5">
-                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-2">Context</p>
+              <div className="mt-3 pt-3 border-t border-border space-y-2.5">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Context</p>
 
                 {/* Context usage bar */}
                 {ctxUsage && (
                   <div className="px-2 space-y-1.5">
                     <div className="flex items-center justify-between text-[10px]">
-                      <span className="text-muted-foreground/70 font-medium">
+                      <span className="text-muted-foreground font-medium">
                         {(ctxUsage.prompt_tokens / 1000).toFixed(1)}k{" / "}
                         {(ctxUsage.context_limit / 1000).toFixed(0)}k tokens
                       </span>
@@ -317,7 +319,7 @@ export default function RunCockpitPage() {
                 )}
 
                 {/* Auto-compact + threshold */}
-                <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-tint/[2%] transition-colors">
+                <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent transition-colors">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Layers className="h-3.5 w-3.5 text-orange-400" />
                     <span>Auto-compact</span>
@@ -328,7 +330,7 @@ export default function RunCockpitPage() {
                         integer
                         min={10}
                         max={95}
-                        className="w-14 h-6 text-[10px] text-right font-mono bg-tint/[3%] border-border/40"
+                        className="w-14 h-6 text-[10px] text-right font-mono bg-muted/50 border-border"
                         value={run.compact_threshold_pct}
                         placeholder="50"
                         onCommit={(val) => updateSettings.mutate({ compact_threshold_pct: val ?? 50 })}
@@ -371,12 +373,12 @@ export default function RunCockpitPage() {
                 {run.compacted_up_to && (
                   <button
                     onClick={() => setCompactionModalOpen(true)}
-                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-tint/[4%] transition-colors group"
+                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-accent transition-colors group"
                   >
                     <div className="flex items-center gap-2 text-xs text-orange-400/80">
                       <FileText className="h-3.5 w-3.5" />
                       <span>Compacted to iter {run.compacted_up_to}</span>
-                      <span className="ml-auto text-[10px] text-muted-foreground/40 group-hover:text-muted-foreground/60">review →</span>
+                      <span className="ml-auto text-[10px] text-muted-foreground group-hover:text-muted-foreground">review →</span>
                     </div>
                   </button>
                 )}
@@ -389,13 +391,13 @@ export default function RunCockpitPage() {
           {/* Token Usage Summary */}
           {usageSummary && (
             <div>
-              <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-2">Usage</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Usage</p>
               <TokenDisplay
                 prompt={usageSummary.total_prompt_tokens}
                 completion={usageSummary.total_completion_tokens}
                 cost={usageSummary.total_estimated_cost}
               />
-              <p className="text-[11px] text-muted-foreground/50 mt-1.5 font-mono">{usageSummary.step_count} agent calls</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5 font-mono">{usageSummary.step_count} agent calls</p>
             </div>
           )}
 
@@ -444,13 +446,14 @@ export default function RunCockpitPage() {
       </div>
 
       {/* ── Right Panel: Step Timeline ───────────────────── */}
-      <div className="w-72 border-l border-border/30 shrink-0 flex flex-col overflow-hidden" style={{ background: "var(--sidebar)" }}>
+      <div className="w-72 border-l border-border shrink-0 flex flex-col overflow-hidden" style={{ background: "var(--sidebar)" }}>
         <StepTimeline
           agentSteps={agentSteps}
           trainingSteps={trainingSteps}
           selectedId={selectedStepId}
           onSelect={(id, type) => { setSelectedStepId(id); setSelectedStepType(type); }}
           onRestartFromIteration={(iteration) => setRestartIteration(iteration)}
+          onCompare={() => setDiffCompareOpen(true)}
           onSetProjectBest={(stepId) => {
             setProjectBest.mutate(stepId, {
               onSuccess: (project) => {
@@ -520,6 +523,14 @@ export default function RunCockpitPage() {
         projectId={projectId!}
         runId={runId!}
       />
+
+      {/* Diff comparison modal */}
+      <DiffCompareModal
+        open={diffCompareOpen}
+        onClose={() => setDiffCompareOpen(false)}
+        projectId={projectId!}
+        runId={runId!}
+      />
     </div>
   );
 }
@@ -565,7 +576,7 @@ function CollapsibleActivity({ state, children }: { state: RunState; children: R
     <div className="glass rounded-xl overflow-hidden mb-6 transition-all duration-300">
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center justify-between px-5 py-3 hover:bg-tint/[3%] transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between px-5 py-3 hover:bg-accent transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-3">
           <div className={`h-7 w-7 rounded-lg ${meta.iconBg} flex items-center justify-center`}>
@@ -574,7 +585,7 @@ function CollapsibleActivity({ state, children }: { state: RunState; children: R
           <div className="flex flex-col items-start">
             <span className="text-sm font-medium text-foreground/90">{meta.label}</span>
             {subtitle && (
-              <span className="text-[11px] text-muted-foreground/60 font-mono">{subtitle}</span>
+              <span className="text-[11px] text-muted-foreground font-mono">{subtitle}</span>
             )}
           </div>
         </div>
@@ -589,9 +600,9 @@ function CollapsibleActivity({ state, children }: { state: RunState; children: R
             </div>
           )}
           {collapsed ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           ) : (
-            <ChevronUp className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
           )}
         </div>
       </button>
@@ -647,7 +658,7 @@ function CenterContent({
           {state === "agent_running" && (
             <button
               onClick={() => onAction("force_fail")}
-              className="mt-4 text-[10px] text-muted-foreground/40 hover:text-red-400 transition-colors"
+              className="mt-4 text-[10px] text-muted-foreground hover:text-red-400 transition-colors"
             >
               Stuck? Force reset
             </button>
@@ -688,13 +699,13 @@ function CenterContent({
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-lg bg-tint/[3%] border border-border/30 p-4">
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">val_bpb</p>
+          <div className="rounded-lg bg-muted/50 border border-border p-4">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">val_bpb</p>
             <p className="text-2xl font-mono font-bold text-emerald-400">{lastTraining.val_bpb?.toFixed(4) ?? "—"}</p>
           </div>
           {lastTraining.commit_sha && (
-            <div className="rounded-lg bg-tint/[3%] border border-border/30 p-4">
-              <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">Commit</p>
+            <div className="rounded-lg bg-muted/50 border border-border p-4">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Commit</p>
               <p className="text-sm font-mono flex items-center gap-2 mt-2">
                 <GitBranch className="h-4 w-4 text-muted-foreground" />
                 {lastTraining.commit_sha.slice(0, 7)}
@@ -730,7 +741,7 @@ function CenterContent({
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium">Training #{lastTraining.iteration} Result</p>
-                <p className="text-[11px] text-muted-foreground/60">Iteration {lastTraining.iteration} completed</p>
+                <p className="text-[11px] text-muted-foreground">Iteration {lastTraining.iteration} completed</p>
               </div>
               {lastTraining.improved != null && (
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono ${
@@ -748,19 +759,19 @@ function CenterContent({
               )}
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-lg bg-tint/[3%] border border-border/30 p-3">
-                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">val_bpb</p>
+              <div className="rounded-lg bg-muted/50 border border-border p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">val_bpb</p>
                 <p className={`text-lg font-mono font-bold ${
-                  lastTraining.improved ? "text-emerald-400" : lastTraining.val_bpb != null ? "text-foreground/80" : "text-muted-foreground/40"
+                  lastTraining.improved ? "text-emerald-400" : lastTraining.val_bpb != null ? "text-foreground" : "text-muted-foreground"
                 }`}>{lastTraining.val_bpb?.toFixed(4) ?? "—"}</p>
               </div>
-              <div className="rounded-lg bg-tint/[3%] border border-border/30 p-3">
-                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">Best</p>
+              <div className="rounded-lg bg-muted/50 border border-border p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Best</p>
                 <p className="text-lg font-mono font-bold text-emerald-400">{bestValBpb?.toFixed(4) ?? "—"}</p>
               </div>
               {lastTraining.commit_sha && (
-                <div className="rounded-lg bg-tint/[3%] border border-border/30 p-3">
-                  <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">Commit</p>
+                <div className="rounded-lg bg-muted/50 border border-border p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Commit</p>
                   <p className="text-sm font-mono flex items-center gap-1.5 mt-1">
                     <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
                     {lastTraining.commit_sha.slice(0, 7)}
@@ -778,7 +789,7 @@ function CenterContent({
           </div>
           <p className="text-base font-medium mb-1">Ready for next iteration</p>
           <p className="text-xs text-muted-foreground mb-6">
-            Press <kbd className="px-1.5 py-0.5 bg-tint/[5%] rounded border border-border/40 text-foreground/80 font-mono text-[11px]">W</kbd> to wake the agent
+            Press <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border text-foreground font-mono text-[11px]">W</kbd> to wake the agent
           </p>
           <Button
             onClick={() => onAction("continue")}
@@ -907,7 +918,7 @@ function CenterContent({
 
 function StatRow({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-tint/[2%] transition-colors">
+    <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent transition-colors">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         {icon}
         <span>{label}</span>
@@ -933,7 +944,7 @@ function ActionBtn({
   };
   const cls = accent
     ? accentStyles[accent]
-    : "bg-tint/[3%] hover:bg-tint/[6%] text-foreground/70 border-border/30";
+    : "bg-muted/50 hover:bg-accent text-muted-foreground border-border";
   return (
     <button
       className={`w-full flex items-center gap-2.5 h-8 px-3 rounded-lg text-xs font-medium border transition-all duration-150 active:scale-[0.98] ${cls}`}
@@ -998,7 +1009,7 @@ function PhaseIndicator({ state }: { state: RunState }) {
                           ? "text-violet-400"
                           : isPast
                             ? "text-emerald-400/70"
-                            : "text-muted-foreground/30"
+                            : "text-muted-foreground"
                       }`}
                     />
                     {isActive && (
@@ -1011,7 +1022,7 @@ function PhaseIndicator({ state }: { state: RunState }) {
                         ? "text-violet-400"
                         : isPast
                           ? "text-emerald-400/50"
-                          : "text-muted-foreground/30"
+                          : "text-muted-foreground"
                     }`}
                   >
                     {phase.label}
@@ -1045,11 +1056,11 @@ function TrainingDetailPanel({ step, onClose }: { step?: TrainingStep; onClose: 
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="fixed inset-y-0 right-0 w-[520px] z-50 border-l border-border/30 flex flex-col"
+      className="fixed inset-y-0 right-0 w-[520px] z-50 border-l border-border flex flex-col"
       style={{ background: "var(--sidebar)" }}
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border/20 flex items-center justify-between shrink-0">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
             step.status === "failed" ? "bg-red-500/10" :
@@ -1065,7 +1076,7 @@ function TrainingDetailPanel({ step, onClose }: { step?: TrainingStep; onClose: 
           </div>
           <div>
             <p className="text-sm font-medium">Training #{step.iteration}</p>
-            <p className="text-[11px] text-muted-foreground/60">
+            <p className="text-[11px] text-muted-foreground">
               {step.status === "failed" ? "Failed" :
                step.status === "running" ? "Running..." :
                step.improved ? "Improved" : "No improvement"}
@@ -1075,23 +1086,23 @@ function TrainingDetailPanel({ step, onClose }: { step?: TrainingStep; onClose: 
         </div>
         <button
           onClick={onClose}
-          className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-tint/[5%] transition-colors"
+          className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-accent transition-colors"
         >
           <X className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
 
       {/* Metrics row */}
-      <div className="px-5 py-3 border-b border-border/20 flex items-center gap-4 shrink-0">
-        <div className="flex-1 rounded-lg bg-tint/[3%] border border-border/20 p-3">
-          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-0.5">val_bpb</p>
-          <p className={`text-lg font-mono font-bold ${step.improved ? "text-emerald-400" : step.val_bpb != null ? "text-foreground/80" : "text-muted-foreground/40"}`}>
+      <div className="px-5 py-3 border-b border-border flex items-center gap-4 shrink-0">
+        <div className="flex-1 rounded-lg bg-muted/50 border border-border p-3">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">val_bpb</p>
+          <p className={`text-lg font-mono font-bold ${step.improved ? "text-emerald-400" : step.val_bpb != null ? "text-foreground" : "text-muted-foreground"}`}>
             {step.val_bpb?.toFixed(4) ?? "—"}
           </p>
         </div>
         {step.commit_sha && (
-          <div className="flex-1 rounded-lg bg-tint/[3%] border border-border/20 p-3">
-            <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-0.5">Commit</p>
+          <div className="flex-1 rounded-lg bg-muted/50 border border-border p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Commit</p>
             <p className="text-sm font-mono flex items-center gap-1.5 mt-1">
               <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
               {step.commit_sha.slice(0, 7)}
@@ -1127,7 +1138,7 @@ function TrainingDetailPanel({ step, onClose }: { step?: TrainingStep; onClose: 
                 <Terminal className="h-3.5 w-3.5 text-cyan-400" />
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">stdout</p>
               </div>
-              <pre className="text-[11px] font-mono leading-relaxed text-foreground/70 bg-black/30 rounded-lg p-3 border border-border/20 overflow-x-auto whitespace-pre-wrap break-all max-h-[40vh] overflow-y-auto">
+              <pre className="text-[11px] font-mono leading-relaxed text-muted-foreground bg-black/30 rounded-lg p-3 border border-border overflow-x-auto whitespace-pre-wrap break-all max-h-[40vh] overflow-y-auto">
                 {step.stdout_log}
               </pre>
             </div>
@@ -1145,8 +1156,8 @@ function TrainingDetailPanel({ step, onClose }: { step?: TrainingStep; onClose: 
           )}
           {!hasStdout && !hasStderr && (
             <div className="text-center py-12">
-              <Terminal className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground/40">
+              <Terminal className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">
                 {step.status === "running" ? "Training in progress..." : "No output recorded"}
               </p>
             </div>
@@ -1202,11 +1213,11 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="fixed inset-y-0 right-0 w-[600px] z-50 border-l border-border/30 flex flex-col"
+      className="fixed inset-y-0 right-0 w-[600px] z-50 border-l border-border flex flex-col"
       style={{ background: "var(--sidebar)" }}
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border/20 flex items-center justify-between shrink-0">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
             step.status === "failed" ? "bg-red-500/10" : "bg-cyan-500/10"
@@ -1219,14 +1230,14 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
           </div>
           <div>
             <p className="text-sm font-medium">Agent #{step.iteration}</p>
-            <p className="text-[11px] text-muted-foreground/60 font-mono">
+            <p className="text-[11px] text-muted-foreground font-mono">
               {step.provider}/{step.model}
             </p>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-tint/[5%] transition-colors"
+          className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-accent transition-colors"
         >
           <X className="h-4 w-4 text-muted-foreground" />
         </button>
@@ -1234,24 +1245,24 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
 
       {/* Token usage metrics */}
       {usage && (
-        <div className="px-5 py-3 border-b border-border/20 flex items-center gap-3 shrink-0">
-          <div className="flex-1 rounded-lg bg-tint/[3%] border border-border/20 p-2.5 flex items-center gap-2">
+        <div className="px-5 py-3 border-b border-border flex items-center gap-3 shrink-0">
+          <div className="flex-1 rounded-lg bg-muted/50 border border-border p-2.5 flex items-center gap-2">
             <ArrowUp className="h-3 w-3 text-cyan-400 shrink-0" />
             <div>
-              <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wider">Input</p>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Input</p>
               <p className="text-sm font-mono font-semibold">{usage.prompt_tokens.toLocaleString()}</p>
             </div>
           </div>
-          <div className="flex-1 rounded-lg bg-tint/[3%] border border-border/20 p-2.5 flex items-center gap-2">
+          <div className="flex-1 rounded-lg bg-muted/50 border border-border p-2.5 flex items-center gap-2">
             <ArrowDown className="h-3 w-3 text-emerald-400 shrink-0" />
             <div>
-              <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wider">Output</p>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Output</p>
               <p className="text-sm font-mono font-semibold">{usage.completion_tokens.toLocaleString()}</p>
             </div>
           </div>
           {usage.estimated_cost > 0 && (
-            <div className="flex-1 rounded-lg bg-tint/[3%] border border-border/20 p-2.5">
-              <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wider">Cost</p>
+            <div className="flex-1 rounded-lg bg-muted/50 border border-border p-2.5">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Cost</p>
               <p className="text-sm font-mono font-semibold text-amber-400">${usage.estimated_cost.toFixed(4)}</p>
             </div>
           )}
@@ -1261,7 +1272,7 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
         <div className="mx-5 mt-3 mb-0 flex items-center gap-2">
-        <TabsList className="bg-tint/[3%] border border-border/20 self-start">
+        <TabsList className="bg-muted/50 border border-border self-start">
           <TabsTrigger value="rationale" className="gap-1.5 text-xs">
             <MessageSquare className="h-3 w-3" /> Rationale
           </TabsTrigger>
@@ -1278,7 +1289,7 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
           {tabContent[activeTab] && (
             <button
               onClick={handleCopy}
-              className="h-7 px-2 rounded-md flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground/80 hover:bg-tint/[5%] border border-border/20 transition-all active:scale-95"
+              className="h-7 px-2 rounded-md flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent border border-border transition-all active:scale-95"
               title={copied ? "Copied" : "Copy to clipboard"}
             >
               {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
@@ -1293,12 +1304,12 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
               {step.rationale ? (
                 <div className="rounded-lg bg-cyan-500/5 border border-cyan-500/15 p-4">
                   <p className="text-[11px] text-cyan-400/60 uppercase tracking-wider font-medium mb-2">Agent Rationale</p>
-                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{step.rationale}</p>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{step.rationale}</p>
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <MessageSquare className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/40">No rationale recorded</p>
+                  <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">No rationale recorded</p>
                 </div>
               )}
             </div>
@@ -1314,14 +1325,14 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
                     <FileCode2 className="h-3.5 w-3.5 text-emerald-400" />
                     <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Generated train.py</p>
                   </div>
-                  <pre className="text-[11px] font-mono leading-relaxed text-foreground/70 bg-black/30 rounded-lg p-4 border border-border/20 overflow-x-auto whitespace-pre-wrap break-all">
+                  <pre className="text-[11px] font-mono leading-relaxed text-muted-foreground bg-black/30 rounded-lg p-4 border border-border overflow-x-auto whitespace-pre-wrap break-all">
                     {step.patch}
                   </pre>
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <FileCode2 className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/40">No patch generated</p>
+                  <FileCode2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">No patch generated</p>
                 </div>
               )}
             </div>
@@ -1332,13 +1343,13 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
           <ScrollArea className="h-full">
             <div className="p-5">
               {step.response ? (
-                <pre className="text-[11px] font-mono leading-relaxed text-foreground/60 bg-black/30 rounded-lg p-4 border border-border/20 overflow-x-auto whitespace-pre-wrap break-all">
+                <pre className="text-[11px] font-mono leading-relaxed text-muted-foreground bg-black/30 rounded-lg p-4 border border-border overflow-x-auto whitespace-pre-wrap break-all">
                   {step.response}
                 </pre>
               ) : (
                 <div className="text-center py-12">
-                  <Code2 className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/40">No response recorded</p>
+                  <Code2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">No response recorded</p>
                 </div>
               )}
             </div>
@@ -1349,13 +1360,13 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
           <ScrollArea className="h-full">
             <div className="p-5">
               {step.prompt ? (
-                <pre className="text-[11px] font-mono leading-relaxed text-foreground/60 bg-black/30 rounded-lg p-4 border border-border/20 overflow-x-auto whitespace-pre-wrap break-all">
+                <pre className="text-[11px] font-mono leading-relaxed text-muted-foreground bg-black/30 rounded-lg p-4 border border-border overflow-x-auto whitespace-pre-wrap break-all">
                   {step.prompt}
                 </pre>
               ) : (
                 <div className="text-center py-12">
-                  <ArrowUp className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/40">No prompt recorded</p>
+                  <ArrowUp className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">No prompt recorded</p>
                 </div>
               )}
             </div>
@@ -1381,20 +1392,20 @@ function RestartDialog({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md glass border-white/[6%]">
+      <DialogContent className="max-w-md glass border-border">
         <DialogHeader>
           <DialogTitle className="text-[15px] font-semibold tracking-tight">
             Restart from iteration {iteration}
           </DialogTitle>
-          <DialogDescription className="text-[13px] text-muted-foreground/70">
+          <DialogDescription className="text-[13px] text-muted-foreground">
             The code will be rolled back to the best checkpoint at or before iteration {iteration}. All history is preserved and the run will auto-continue from the next iteration.
           </DialogDescription>
         </DialogHeader>
-        <label className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-tint/[3%] transition-colors cursor-pointer">
+        <label className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-accent transition-colors cursor-pointer">
           <Switch checked={resetTrainPy} onCheckedChange={setResetTrainPy} />
           <div>
             <p className="text-sm font-medium">Reset train.py</p>
-            <p className="text-[11px] text-muted-foreground/60 mt-0.5">
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               Restore train.py to the version before this iteration so the agent redoes it from scratch
             </p>
           </div>

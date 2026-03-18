@@ -75,7 +75,7 @@ export function TrainingInfoCard({ iteration, bestValBpb, model }: TrainingInfoC
 
       {/* Progress bar */}
       {progressPct != null && (
-        <div className="px-5 py-3 border-t border-border/10">
+        <div className="px-5 py-3 border-t border-border">
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <Activity className="h-3 w-3 text-violet-400" />
@@ -85,7 +85,7 @@ export function TrainingInfoCard({ iteration, bestValBpb, model }: TrainingInfoC
               {progressPct.toFixed(1)}%
             </span>
           </div>
-          <div className="h-1.5 rounded-full bg-tint/[5%] overflow-hidden">
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all duration-500 ease-out"
               style={{ width: `${progressPct}%` }}
@@ -108,12 +108,12 @@ function StatCell({
   dim?: boolean;
 }) {
   return (
-    <div className="px-4 py-3 bg-tint/[1%]">
+    <div className="px-4 py-3">
       <div className="flex items-center gap-1.5 mb-1">
         {icon}
-        <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</span>
       </div>
-      <p className={`text-sm font-medium tabular-nums ${mono ? "font-mono" : ""} ${highlight ? "text-emerald-400" : dim ? "text-muted-foreground/40" : "text-foreground/90"}`}>
+      <p className={`text-sm font-medium tabular-nums ${mono ? "font-mono" : ""} ${highlight ? "text-emerald-400" : dim ? "text-muted-foreground" : "text-foreground/90"}`}>
         {value}
       </p>
     </div>

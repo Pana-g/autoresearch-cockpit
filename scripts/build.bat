@@ -11,8 +11,8 @@ REM   - uv            https://docs.astral.sh/uv/
 REM   - Bun           https://bun.sh/
 REM
 REM Output:
-REM   backend\dist\autoresearch-cockpit.exe
-REM   dist\autoresearch-cockpit-windows-x64.zip
+REM   dist\autoresearch-cockpit-windows-x64.exe
+REM   dist\.env.example
 
 setlocal EnableDelayedExpansion
 
@@ -69,20 +69,17 @@ if errorlevel 1 ( echo ERROR: PyInstaller failed & exit /b 1 )
 echo    Binary built -^> backend\dist\autoresearch-cockpit.exe
 
 REM ── Package ──────────────────────────────────────────────
-echo =^> Packaging release archive...
+echo =^> Packaging release...
 if not exist "%DIST%" mkdir "%DIST%"
-if exist "%ROOT%\.env.example" copy "%ROOT%\.env.example" "%BACKEND%\dist\.env.example"
-
-powershell -NoProfile -Command ^
-  "Compress-Archive -Path '%BACKEND%\dist\autoresearch-cockpit.exe','%BACKEND%\dist\.env.example' -DestinationPath '%DIST%\autoresearch-cockpit-%PLATFORM%.zip' -Force"
+copy "%BACKEND%\dist\autoresearch-cockpit.exe" "%DIST%\autoresearch-cockpit-%PLATFORM%.exe"
+if exist "%ROOT%\.env.example" copy "%ROOT%\.env.example" "%DIST%\.env.example"
 
 echo.
 echo *** Build complete! ***
-echo   Binary:  %BACKEND%\dist\autoresearch-cockpit.exe
-echo   Archive: %DIST%\autoresearch-cockpit-%PLATFORM%.zip
+echo   Binary:  %DIST%\autoresearch-cockpit-%PLATFORM%.exe
 echo.
 echo To test locally:
 echo   1. Start PostgreSQL:  docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres --name arc-db postgres:16
-echo   2. Create .env:       copy .env.example .env  ^(fill in AR_ENCRYPTION_KEY^)
-echo   3. Run the binary:    %BACKEND%\dist\autoresearch-cockpit.exe
+echo   2. Create .env:       copy %DIST%\.env.example .env  ^(fill in AR_ENCRYPTION_KEY^)
+echo   3. Run the binary:    %DIST%\autoresearch-cockpit-%PLATFORM%.exe
 echo   4. Open browser:      http://localhost:8000

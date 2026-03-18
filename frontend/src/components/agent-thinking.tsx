@@ -129,7 +129,7 @@ export function AgentThinkingView({ stream, phase: phaseOverride }: { stream: st
             </span>
           </div>
           <div className="rounded-lg bg-amber-500/[4%] border border-amber-500/10 px-4 py-3 max-h-96 overflow-y-auto">
-            <p className="text-xs text-foreground/70 leading-relaxed whitespace-pre-wrap">
+            <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {displayThinking}
               {phase === "thinking" && (
                 <span className="inline-block w-1.5 h-3.5 bg-amber-400/60 animate-pulse-dot ml-0.5 -mb-0.5" />
@@ -148,7 +148,7 @@ export function AgentThinkingView({ stream, phase: phaseOverride }: { stream: st
               Patch Code
             </span>
             {displayCode && (
-              <span className="text-[10px] text-muted-foreground/40 font-mono ml-auto">
+              <span className="text-[10px] text-muted-foreground font-mono ml-auto">
                 {displayCode.split("\n").length} lines
               </span>
             )}
@@ -168,7 +168,7 @@ export function AgentThinkingView({ stream, phase: phaseOverride }: { stream: st
       {/* Empty state — waiting for stream */}
       {!stream && (
         <div className="px-5 pb-5">
-          <div className="rounded-lg bg-black/20 border border-border/15 p-6 flex items-center justify-center">
+          <div className="rounded-lg bg-black/20 border border-border p-6 flex items-center justify-center">
             <div className="flex items-center gap-2 text-zinc-400">
               <div className="h-1.5 w-1.5 rounded-full bg-cyan-400/50 animate-pulse-dot" />
               <span className="text-xs font-mono">Waiting for agent response...</span>
@@ -195,7 +195,7 @@ export function PhaseIndicator({ phase }: { phase: "thinking" | "coding" | "done
           className={`text-[9px] font-mono uppercase ${
             phase === "thinking"
               ? "text-amber-400"
-              : "text-muted-foreground/30"
+              : "text-muted-foreground"
           }`}
         >
           Think
@@ -217,8 +217,8 @@ export function PhaseIndicator({ phase }: { phase: "thinking" | "coding" | "done
             phase === "coding"
               ? "text-cyan-400"
               : phase === "done"
-              ? "text-muted-foreground/30"
-              : "text-muted-foreground/20"
+              ? "text-muted-foreground"
+              : "text-muted-foreground"
           }`}
         >
           Code

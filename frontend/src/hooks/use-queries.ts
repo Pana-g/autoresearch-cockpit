@@ -1,6 +1,7 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projects, runs, providers, credentials, usage, notes, channels } from "@/lib/api";
+import { projects, runs, providers, credentials, usage, notes, channels, runtimeSettings } from "@/lib/api";
 import type { RunAction, NotificationEventType } from "@/lib/types";
+import type { RuntimeSettingsUpdate } from "@/lib/api";
 
 /* ── Projects ─────────────────────────────────────────── */
 
@@ -87,7 +88,7 @@ export function useRun(projectId: string, runId: string) {
     queryKey: ["runs", projectId, runId],
     queryFn: () => runs.get(projectId, runId),
     enabled: !!projectId && !!runId,
-    refetchInterval: 3000,
+    refetchInterval: 10_000,
   });
 }
 
@@ -129,7 +130,7 @@ export function useAgentSteps(projectId: string, runId: string) {
     getNextPageParam: (lastPage, allPages) =>
       lastPage.length === PAGE_SIZE ? allPages.length * PAGE_SIZE : undefined,
     enabled: !!projectId && !!runId,
-    refetchInterval: 5000,
+    refetchInterval: 15_000,
   });
 }
 
@@ -141,7 +142,7 @@ export function useTrainingSteps(projectId: string, runId: string) {
     getNextPageParam: (lastPage, allPages) =>
       lastPage.length === PAGE_SIZE ? allPages.length * PAGE_SIZE : undefined,
     enabled: !!projectId && !!runId,
-    refetchInterval: 5000,
+    refetchInterval: 15_000,
   });
 }
 
@@ -405,4 +406,22 @@ export function useTestChannel() {
 
 export function useValidateChannel() {
   return useMutation({ mutationFn: (id: string) => channels.validate(id) });
+}
+
+/* ── Runtime Settings ─────────────────────────────────── */
+
+export function useRuntimeSettings() {
+  return useQuery({
+    queryKey: ["runtime-settings"],
+    queryFn: runtimeSettings.get,
+    staleTime: 30_000,
+  });
+}
+
+export function useUpdateRuntimeSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: RuntimeSettingsUpdate) => runtimeSettings.update(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["runtime-settings"] }),
+  });
 }

@@ -81,18 +81,18 @@ export function MessageComposer({ runId }: { runId: string }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-1">
         <MessageSquare className="h-3.5 w-3.5 text-violet-400" />
-        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
           Agent Messages
         </p>
         {(activeNotes.length + deliveredNotes.length) > 0 && (
-          <span className="ml-auto text-[10px] font-mono text-muted-foreground/40">
+          <span className="ml-auto text-[10px] font-mono text-muted-foreground">
             {activeNotes.length + deliveredNotes.length}
           </span>
         )}
       </div>
 
       {/* Compose area */}
-      <div className="rounded-lg bg-tint/[3%] border border-border/30 overflow-hidden focus-within:border-violet-500/40 transition-colors">
+      <div className="rounded-lg bg-muted/50 border border-border overflow-hidden focus-within:border-violet-500/40 transition-colors">
         <textarea
           ref={textareaRef}
           value={message}
@@ -100,10 +100,10 @@ export function MessageComposer({ runId }: { runId: string }) {
           onKeyDown={handleKeyDown}
           placeholder="Send a hint or instruction to the agent..."
           rows={2}
-          className="w-full bg-transparent text-xs text-foreground/90 placeholder:text-muted-foreground/40 px-3 pt-2.5 pb-1 resize-none focus:outline-none font-mono leading-relaxed"
+          className="w-full bg-transparent text-xs text-foreground/90 placeholder:text-muted-foreground px-3 pt-2.5 pb-1 resize-none focus:outline-none font-mono leading-relaxed"
         />
         <div className="flex items-center justify-between px-2 pb-2">
-          <span className="text-[10px] text-muted-foreground/40 font-mono">
+          <span className="text-[10px] text-muted-foreground font-mono">
             {message.length > 0 ? `⌘↵ to send` : ""}
           </span>
           <button
@@ -221,18 +221,18 @@ function NoteCard({
       className={`rounded-lg border overflow-hidden transition-colors ${
         isActive
           ? "bg-violet-500/[4%] border-violet-500/15"
-          : "bg-tint/[2%] border-border/20 opacity-60"
+          : "bg-muted/50 border-border opacity-60"
       }`}
     >
       <div className="flex items-center gap-1.5 px-2.5 py-1.5">
         <button
           onClick={onToggleExpand}
-          className="shrink-0 hover:bg-tint/[5%] rounded p-0.5 transition-colors"
+          className="shrink-0 hover:bg-accent rounded p-0.5 transition-colors"
         >
           {expanded ? (
-            <ChevronDown className="h-3 w-3 text-muted-foreground/50" />
+            <ChevronDown className="h-3 w-3 text-muted-foreground" />
           ) : (
-            <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
           )}
         </button>
         <button
@@ -245,7 +245,7 @@ function NoteCard({
             </p>
           )}
           {expanded && !editing && (
-            <span className="text-[10px] text-muted-foreground/40 font-mono">
+            <span className="text-[10px] text-muted-foreground font-mono">
               {lines.length} line{lines.length !== 1 ? "s" : ""}
             </span>
           )}
@@ -257,7 +257,7 @@ function NoteCard({
           {isActive && !editing && (
             <button
               onClick={onEdit}
-              className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-violet-400 hover:bg-violet-500/10 transition-all"
+              className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-violet-400 hover:bg-violet-500/10 transition-all"
               title="Edit"
             >
               <Pencil className="h-2.5 w-2.5" />
@@ -274,7 +274,7 @@ function NoteCard({
               </button>
               <button
                 onClick={onCancelEdit}
-                className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-tint/[5%] transition-all"
+                className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
                 title="Cancel (Esc)"
               >
                 <X className="h-2.5 w-2.5" />
@@ -283,7 +283,7 @@ function NoteCard({
           )}
           <button
             onClick={onDelete}
-            className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all"
             title="Delete"
           >
             <X className="h-2.5 w-2.5" />
@@ -292,7 +292,7 @@ function NoteCard({
       </div>
 
       {expanded && (
-        <div className="border-t border-border/15">
+        <div className="border-t border-border">
           {editing ? (
             <textarea
               ref={editRef}
@@ -303,11 +303,11 @@ function NoteCard({
                 e.target.style.height = `${e.target.scrollHeight}px`;
               }}
               onKeyDown={handleEditKeyDown}
-              className="w-full bg-transparent text-[11px] font-mono text-foreground/80 leading-relaxed px-3 py-2 resize-none focus:outline-none min-h-[60px]"
+              className="w-full bg-transparent text-[11px] font-mono text-foreground leading-relaxed px-3 py-2 resize-none focus:outline-none min-h-[60px]"
               spellCheck={false}
             />
           ) : (
-            <pre className="px-3 py-2 text-[11px] font-mono text-foreground/60 leading-relaxed whitespace-pre-wrap break-words max-h-[200px] overflow-auto">
+            <pre className="px-3 py-2 text-[11px] font-mono text-muted-foreground leading-relaxed whitespace-pre-wrap break-words max-h-[200px] overflow-auto">
               {note.content}
             </pre>
           )}

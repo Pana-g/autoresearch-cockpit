@@ -5,7 +5,6 @@ export interface ServerConnection {
   id: string;
   label: string;
   url: string;       // e.g. "http://192.168.1.50:8000/api"
-  apiKey: string;     // empty = no auth
 }
 
 interface ConnectionState {
@@ -30,7 +29,6 @@ const FALLBACK_SERVER: ServerConnection = {
   id: "local",
   label: "Local",
   url: "http://localhost:8000/api",
-  apiKey: "",
 };
 
 export const useConnectionStore = create<ConnectionState>()(

@@ -10,6 +10,7 @@ import ProjectSettingsPage from "@/pages/project-settings";
 import ProvidersPage from "@/pages/providers";
 import ChannelsPage from "@/pages/channels";
 import ServersPage from "@/pages/servers";
+import SettingsPage from "@/pages/settings";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { WelcomeSetup } from "@/components/welcome-setup";
 import { useConnectionStore } from "@/stores/connection-store";
@@ -71,6 +72,7 @@ export default function App() {
               <Route path="/settings/providers" element={<ProvidersPage />} />
               <Route path="/settings/channels" element={<ChannelsPage />} />
               <Route path="/settings/servers" element={<ServersPage />} />
+              <Route path="/settings/general" element={<SettingsPage />} />
             </Routes>
             </ErrorBoundary>
           </AppShell>

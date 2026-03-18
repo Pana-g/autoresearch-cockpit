@@ -38,31 +38,31 @@ export function WorkspaceViewer({
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <FolderOpen className="h-3.5 w-3.5 text-amber-400" />
-        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
           Workspace
         </p>
       </div>
 
       {/* Git info */}
-      <div className="rounded-lg bg-tint/[3%] border border-border/30 px-3 py-2 space-y-1">
+      <div className="rounded-lg bg-muted/50 border border-border px-3 py-2 space-y-1">
         {data.git_branch && (
           <div className="flex items-center gap-2 text-[11px]">
-            <GitBranch className="h-3 w-3 text-muted-foreground/50" />
-            <span className="text-muted-foreground/60">Branch:</span>
-            <span className="font-mono text-foreground/70">{data.git_branch}</span>
+            <GitBranch className="h-3 w-3 text-muted-foreground" />
+            <span className="text-muted-foreground">Branch:</span>
+            <span className="font-mono text-muted-foreground">{data.git_branch}</span>
           </div>
         )}
         {data.current_commit && (
           <div className="flex items-center gap-2 text-[11px]">
-            <Code className="h-3 w-3 text-muted-foreground/50" />
-            <span className="text-muted-foreground/60">HEAD:</span>
-            <span className="font-mono text-foreground/70">{data.current_commit.slice(0, 7)}</span>
+            <Code className="h-3 w-3 text-muted-foreground" />
+            <span className="text-muted-foreground">HEAD:</span>
+            <span className="font-mono text-muted-foreground">{data.current_commit.slice(0, 7)}</span>
           </div>
         )}
         {data.best_commit && (
           <div className="flex items-center gap-2 text-[11px]">
             <Code className="h-3 w-3 text-emerald-400/60" />
-            <span className="text-muted-foreground/60">Best:</span>
+            <span className="text-muted-foreground">Best:</span>
             <span className="font-mono text-emerald-400/80">{data.best_commit.slice(0, 7)}</span>
           </div>
         )}
@@ -83,15 +83,15 @@ export function WorkspaceViewer({
 
       {/* Other files */}
       {data.notable_files.length > 0 && (
-        <div className="rounded-lg bg-tint/[2%] border border-border/20 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground/40 uppercase tracking-wider mb-1.5">
+        <div className="rounded-lg bg-muted/50 border border-border px-3 py-2">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">
             Other files
           </p>
           <div className="flex flex-wrap gap-1">
             {data.notable_files.map((f) => (
               <span
                 key={f}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-tint/[3%] text-[10px] font-mono text-muted-foreground/50"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/50 text-[10px] font-mono text-muted-foreground"
               >
                 <FileText className="h-2.5 w-2.5" />
                 {f}
@@ -143,24 +143,24 @@ function FileEntry({
     <div
       className={`rounded-lg border overflow-hidden transition-colors ${
         important
-          ? "bg-tint/[3%] border-border/30"
-          : "bg-tint/[2%] border-border/20"
+          ? "bg-muted/50 border-border"
+          : "bg-muted/50 border-border"
       }`}
     >
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           onClick={onToggle}
-          className="shrink-0 hover:bg-tint/[5%] rounded p-0.5 transition-colors"
+          className="shrink-0 hover:bg-accent rounded p-0.5 transition-colors"
         >
           {expanded ? (
-            <ChevronDown className="h-3 w-3 text-muted-foreground/50" />
+            <ChevronDown className="h-3 w-3 text-muted-foreground" />
           ) : (
-            <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
           )}
         </button>
         <button
           onClick={onOpen}
-          className="flex items-center gap-2 flex-1 min-w-0 hover:bg-tint/[3%] rounded px-1 py-0.5 transition-colors text-left"
+          className="flex items-center gap-2 flex-1 min-w-0 hover:bg-accent rounded px-1 py-0.5 transition-colors text-left"
         >
           <FileText
             className={`h-3 w-3 shrink-0 ${
@@ -168,29 +168,29 @@ function FileEntry({
                 ? "text-blue-400"
                 : name === "train.py"
                 ? "text-amber-400"
-                : "text-muted-foreground/50"
+                : "text-muted-foreground"
             }`}
           />
-          <span className="text-[11px] font-mono font-medium text-foreground/80">
+          <span className="text-[11px] font-mono font-medium text-foreground">
             {name}
           </span>
         </button>
-        <span className="text-[10px] text-muted-foreground/40 font-mono shrink-0">
+        <span className="text-[10px] text-muted-foreground font-mono shrink-0">
           {lineCount}L · {charCount > 1000 ? `${(charCount / 1000).toFixed(1)}k` : charCount} chars
         </span>
       </div>
 
       {!expanded && (
         <div className="px-3 pb-2">
-          <p className="text-[10px] text-muted-foreground/35 font-mono truncate">
+          <p className="text-[10px] text-muted-foreground font-mono truncate">
             {preview}
           </p>
         </div>
       )}
 
       {expanded && (
-        <div className="border-t border-border/20">
-          <pre className="px-3 py-2 text-[11px] font-mono text-foreground/60 leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-auto">
+        <div className="border-t border-border">
+          <pre className="px-3 py-2 text-[11px] font-mono text-muted-foreground leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-auto">
             {content}
           </pre>
         </div>

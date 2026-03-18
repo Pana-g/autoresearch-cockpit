@@ -34,9 +34,9 @@ export function ModelSelector({ provider, model, credentialId, onProviderChange,
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <label className="text-[11px] text-muted-foreground/60 uppercase tracking-wider mb-1.5 block font-medium">Provider</label>
+        <label className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5 block font-medium">Provider</label>
         <Select value={provider} onValueChange={(v) => v && onProviderChange(v)}>
-          <SelectTrigger className="h-9 text-sm bg-tint/[3%] border-border/50">
+          <SelectTrigger className="h-9 text-sm bg-muted/50 border-border">
             <SelectValue placeholder="Select provider" />
           </SelectTrigger>
           <SelectContent>
@@ -49,9 +49,9 @@ export function ModelSelector({ provider, model, credentialId, onProviderChange,
 
       {onCredentialChange && providerCreds && providerCreds.length > 0 && (
         <div>
-          <label className="text-[11px] text-muted-foreground/60 uppercase tracking-wider mb-1.5 block font-medium">Credential</label>
+          <label className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5 block font-medium">Credential</label>
           <Select value={credentialId ?? ""} onValueChange={(v) => v && onCredentialChange(v)}>
-            <SelectTrigger className="h-9 text-sm bg-tint/[3%] border-border/50">
+            <SelectTrigger className="h-9 text-sm bg-muted/50 border-border">
               <SelectValue placeholder="Select credential">{credentialName ?? "Select credential"}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -65,13 +65,13 @@ export function ModelSelector({ provider, model, credentialId, onProviderChange,
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="text-[11px] text-muted-foreground/60 uppercase tracking-wider font-medium">Model</label>
+          <label className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Model</label>
           <Tooltip>
             <TooltipTrigger render={<span />}>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 text-muted-foreground/50 hover:text-foreground"
+                className="h-5 w-5 text-muted-foreground hover:text-foreground"
                 disabled={!provider || refreshModels.isPending || isFetching}
                 onClick={() => refreshModels.mutate({ provider, credentialId })}
               >
@@ -91,7 +91,7 @@ export function ModelSelector({ provider, model, credentialId, onProviderChange,
           </Tooltip>
         </div>
         <Select value={model} onValueChange={(v) => v && onModelChange(v)}>
-          <SelectTrigger className="h-9 text-sm bg-tint/[3%] border-border/50 font-mono truncate">
+          <SelectTrigger className="h-9 text-sm bg-muted/50 border-border font-mono truncate">
             <SelectValue placeholder="Select model" />
           </SelectTrigger>
           <SelectContent className="min-w-[320px]">

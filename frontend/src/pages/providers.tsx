@@ -236,7 +236,7 @@ export default function ProvidersPage() {
         </div>
         <Button
           onClick={() => setShowCreate(!showCreate)}
-          className="gap-2 bg-primary/90 hover:bg-primary text-primary-foreground shadow-lg shadow-primary/10 active:scale-95 transition-all"
+          className="gap-2 bg-primary/90 hover:bg-primary text-primary-foreground shadow-sm active:scale-95 transition-all"
         >
           <Plus className="h-4 w-4" /> Add Credential
         </Button>
@@ -255,10 +255,10 @@ export default function ProvidersPage() {
             <div className="glass rounded-xl p-5 space-y-4">
               <p className="text-xs font-medium text-primary uppercase tracking-wider">New Credential</p>
 
-              <Input placeholder="Credential name" value={name} onChange={(e) => setName(e.target.value)} className="h-9 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors" />
+              <Input placeholder="Credential name" value={name} onChange={(e) => setName(e.target.value)} className="h-9 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors" />
 
               <Select value={provider} onValueChange={(v) => v && handleProviderChange(v)}>
-                <SelectTrigger className="h-9 text-sm bg-tint/[3%] border-border/50">
+                <SelectTrigger className="h-9 text-sm bg-muted/50 border-border">
                   <SelectValue placeholder="Select provider" />
                 </SelectTrigger>
                 <SelectContent className="min-w-[var(--radix-select-trigger-width)]">
@@ -280,7 +280,7 @@ export default function ProvidersPage() {
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         authMode === mode
                           ? "bg-primary/15 text-primary border border-primary/25"
-                          : "bg-tint/[3%] text-muted-foreground border border-border/30 hover:bg-tint/[5%]"
+                          : "bg-muted/50 text-muted-foreground border border-border hover:bg-accent"
                       }`}
                     >
                       {mode === "device_auth" && <><Fingerprint className="h-3 w-3" /> Device Auth</>}
@@ -298,7 +298,7 @@ export default function ProvidersPage() {
                   placeholder="API Key (optional)"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  className="h-9 text-sm font-mono bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors"
+                  className="h-9 text-sm font-mono bg-muted/50 border-border focus:border-primary/40 transition-colors"
                   autoComplete="off"
                 />
               )}
@@ -307,7 +307,7 @@ export default function ProvidersPage() {
               {authMode === "proxy" && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs text-muted-foreground/60 font-medium">Copilot Proxy</label>
+                    <label className="text-xs text-muted-foreground font-medium">Copilot Proxy</label>
                     <button
                       onClick={async () => {
                         setDetecting(true);
@@ -337,18 +337,18 @@ export default function ProvidersPage() {
                     placeholder="http://localhost:3000/api/v1"
                     value={proxyUrl}
                     onChange={(e) => setProxyUrl(e.target.value)}
-                    className="h-9 text-sm font-mono bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors"
+                    className="h-9 text-sm font-mono bg-muted/50 border-border focus:border-primary/40 transition-colors"
                   />
                   <Input
                     type="password"
                     placeholder="API Key / GitHub token (ghu_...)"
                     value={proxyApiKey}
                     onChange={(e) => setProxyApiKey(e.target.value)}
-                    className="h-9 text-sm font-mono bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors"
+                    className="h-9 text-sm font-mono bg-muted/50 border-border focus:border-primary/40 transition-colors"
                     autoComplete="off"
                   />
-                  <p className="text-[11px] text-muted-foreground/40">
-                    Requires the <span className="font-mono text-muted-foreground/60">copilot-proxy</span> VS Code extension running locally
+                  <p className="text-[11px] text-muted-foreground">
+                    Requires the <span className="font-mono text-muted-foreground">copilot-proxy</span> VS Code extension running locally
                   </p>
                 </div>
               )}
@@ -361,26 +361,26 @@ export default function ProvidersPage() {
                       size="sm"
                       variant="outline"
                       onClick={deviceAuth.start}
-                      className="gap-2 border-border/50 hover:border-primary/40"
+                      className="gap-2 border-border hover:border-primary/40"
                     >
                       <Fingerprint className="h-3.5 w-3.5" /> Start Device Authorization
                     </Button>
                   )}
 
                   {deviceAuth.state.phase === "waiting" && (
-                    <div className="rounded-lg bg-tint/[3%] border border-border/30 p-4 space-y-3">
+                    <div className="rounded-lg bg-muted/50 border border-border p-4 space-y-3">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
                         <span>Waiting for authorization…</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground/60">Your code:</span>
-                        <code className="text-lg font-mono font-bold text-foreground tracking-[0.3em] bg-tint/[5%] px-3 py-1.5 rounded-md border border-border/30">
+                        <span className="text-xs text-muted-foreground">Your code:</span>
+                        <code className="text-lg font-mono font-bold text-foreground tracking-[0.3em] bg-muted px-3 py-1.5 rounded-md border border-border">
                           {deviceAuth.state.userCode}
                         </code>
                         <button
                           onClick={() => copyCode(deviceAuth.state.phase === "waiting" ? deviceAuth.state.userCode : "")}
-                          className="text-muted-foreground/50 hover:text-foreground p-1 rounded transition-colors"
+                          className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
                           title="Copy code"
                         >
                           {copied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -421,7 +421,7 @@ export default function ProvidersPage() {
 
               {/* No auth needed */}
               {authMode === "none" && (
-                <p className="text-xs text-muted-foreground/50 italic">No authentication required — connects to local instance</p>
+                <p className="text-xs text-muted-foreground italic">No authentication required — connects to local instance</p>
               )}
 
               <div className="flex gap-2 pt-1">
@@ -449,15 +449,15 @@ export default function ProvidersPage() {
               className="glass rounded-xl overflow-hidden"
             >
               {/* Provider header */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/20">
+              <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
                 <div className="flex items-center gap-3">
                   <Shield className={`h-4 w-4 ${colorClass}`} />
                   <span className="text-sm font-semibold">{prov.name}</span>
                   {PROVIDER_DESCRIPTIONS[prov.name] && (
-                    <span className="text-[10px] text-muted-foreground/40 font-mono hidden sm:inline">{PROVIDER_DESCRIPTIONS[prov.name]}</span>
+                    <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">{PROVIDER_DESCRIPTIONS[prov.name]}</span>
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground/60 font-mono">
+                <span className="text-[10px] text-muted-foreground font-mono">
                   {provCreds.length} credential{provCreds.length !== 1 ? "s" : ""}
                 </span>
               </div>
@@ -465,22 +465,22 @@ export default function ProvidersPage() {
               {/* Credential list */}
               <div className="p-3 space-y-1.5">
                 {provCreds.length === 0 && (
-                  <p className="text-xs text-muted-foreground/50 italic px-2 py-3 text-center">No credentials configured</p>
+                  <p className="text-xs text-muted-foreground italic px-2 py-3 text-center">No credentials configured</p>
                 )}
                 {provCreds.map((c) => {
                   const vs = validationState[c.id] ?? "idle";
                   return (
-                    <div key={c.id} className="flex items-center gap-3 rounded-lg bg-tint/[2%] hover:bg-tint/[4%] px-4 py-2.5 transition-colors">
+                    <div key={c.id} className="flex items-center gap-3 rounded-lg bg-muted/50 hover:bg-accent px-4 py-2.5 transition-colors">
                       {c.auth_type === "oauth" ? (
-                        <Fingerprint className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                        <Fingerprint className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       ) : c.auth_type === "proxy" ? (
-                        <Server className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                        <Server className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       ) : (
-                        <Key className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                        <Key className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium">{c.name}</p>
-                        <p className="text-[11px] text-muted-foreground/50 font-mono">{c.auth_type} · {formatDistanceToNow(c.created_at)}</p>
+                        <p className="text-[11px] text-muted-foreground font-mono">{c.auth_type} · {formatDistanceToNow(c.created_at)}</p>
                       </div>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono ${
                         c.is_active
@@ -495,13 +495,13 @@ export default function ProvidersPage() {
                       {vs === "invalid" && <XCircle className="h-3.5 w-3.5 text-red-400" />}
                       <button
                         onClick={() => handleValidate(c.id)}
-                        className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-tint/[5%] transition-colors"
+                        className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-accent transition-colors"
                       >
                         Test
                       </button>
                       <button
                         onClick={() => setDeleteId(c.id)}
-                        className="text-muted-foreground/40 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 transition-all"
+                        className="text-muted-foreground hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 transition-all"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

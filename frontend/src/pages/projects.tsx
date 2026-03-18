@@ -47,7 +47,7 @@ export default function ProjectsPage() {
         </div>
         <Button
           onClick={() => setShowCreate(!showCreate)}
-          className="gap-2 bg-primary/90 hover:bg-primary text-primary-foreground shadow-lg shadow-primary/10 active:scale-95 transition-all duration-150"
+          className="gap-2 bg-primary/90 hover:bg-primary text-primary-foreground shadow-sm active:scale-95 transition-all duration-150"
         >
           <Plus className="h-4 w-4" />
           Import Project
@@ -66,9 +66,9 @@ export default function ProjectsPage() {
           >
             <div className="glass rounded-xl p-5 space-y-3">
               <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">New Project</p>
-              <Input placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} className="h-9 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors" />
-              <Input placeholder="/path/to/autoresearch/workspace" value={sourcePath} onChange={(e) => setSourcePath(e.target.value)} className="h-9 text-sm font-mono bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors" />
-              <Input placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} className="h-9 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors" />
+              <Input placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} className="h-9 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors" />
+              <Input placeholder="/path/to/autoresearch/workspace" value={sourcePath} onChange={(e) => setSourcePath(e.target.value)} className="h-9 text-sm font-mono bg-muted/50 border-border focus:border-primary/40 transition-colors" />
+              <Input placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} className="h-9 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors" />
               <div className="flex gap-2 pt-1">
                 <Button size="sm" onClick={handleCreate} disabled={!name || !sourcePath || createProject.isPending} className="active:scale-95 transition-transform">
                   {createProject.isPending ? "Creating..." : "Create"}
@@ -111,16 +111,16 @@ export default function ProjectsPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold group-hover:text-primary transition-colors">{p.name}</p>
                 {p.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{p.description}</p>}
-                <p className="text-[11px] font-mono text-muted-foreground/60 truncate mt-0.5">{p.source_path}</p>
+                <p className="text-[11px] font-mono text-muted-foreground truncate mt-0.5">{p.source_path}</p>
               </div>
-              <span className="text-[11px] text-muted-foreground/60 font-mono shrink-0">{formatDistanceToNow(p.created_at)}</span>
+              <span className="text-[11px] text-muted-foreground font-mono shrink-0">{formatDistanceToNow(p.created_at)}</span>
               <button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteId(p.id); }}
                 className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all duration-150 p-1.5 rounded-md hover:bg-red-500/10"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
-              <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 shrink-0 transition-colors" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground shrink-0 transition-colors" />
             </Link>
           </motion.div>
         ))}
@@ -136,7 +136,7 @@ export default function ProjectsPage() {
               <Beaker className="h-8 w-8 text-primary/40" />
             </div>
             <p className="text-sm text-muted-foreground">No projects yet</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Import a workspace to start running experiments</p>
+            <p className="text-xs text-muted-foreground mt-1">Import a workspace to start running experiments</p>
             <Button
               onClick={() => setShowCreate(true)}
               variant="outline"

@@ -1,5 +1,5 @@
 import { Link, useLocation, useParams } from "react-router-dom";
-import { Beaker, KeyRound, FolderOpen, Menu, ChevronRight, Sun, Moon, Monitor, Bell } from "lucide-react";
+import { Beaker, KeyRound, FolderOpen, Menu, ChevronRight, Sun, Moon, Monitor, Bell, Settings, FileJson2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/stores/ui-store";
 import { useThemeStore } from "@/stores/theme-store";
@@ -10,6 +10,7 @@ const NAV = [
   { to: "/projects", label: "Projects", icon: FolderOpen },
   { to: "/settings/providers", label: "Providers", icon: KeyRound },
   { to: "/settings/channels", label: "Channels", icon: Bell },
+  { to: "/settings/general", label: "Settings", icon: Settings },
 ];
 
 function Breadcrumbs() {
@@ -25,6 +26,7 @@ function Breadcrumbs() {
     if (segments[1] === "providers") crumbs.push({ label: "Providers", to: "/settings/providers" });
     else if (segments[1] === "channels") crumbs.push({ label: "Channels", to: "/settings/channels" });
     else if (segments[1] === "servers") crumbs.push({ label: "Servers", to: "/settings/servers" });
+    else if (segments[1] === "general") crumbs.push({ label: "Settings", to: "/settings/general" });
     else crumbs.push({ label: "Settings", to: "/settings/providers" });
   }
   if (crumbs.length === 0) return null;
@@ -34,7 +36,7 @@ function Breadcrumbs() {
         <span key={c.to} className="flex items-center gap-1">
           {i > 0 && <ChevronRight className="h-3 w-3 opacity-40" />}
           {i === crumbs.length - 1 ? (
-            <span className="text-foreground/80 font-mono">{c.label}</span>
+            <span className="text-foreground font-mono">{c.label}</span>
           ) : (
             <Link to={c.to} className="hover:text-foreground transition-colors font-mono">{c.label}</Link>
           )}
@@ -51,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background relative grain">
+    <div className="flex h-screen overflow-hidden bg-background relative">
       {/* Sidebar */}
       <AnimatePresence mode="wait">
         {sidebarOpen && (
@@ -60,12 +62,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             animate={{ width: 220, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="flex-shrink-0 border-r border-border/40 flex flex-col overflow-hidden"
+            className="flex-shrink-0 border-r border-border flex flex-col overflow-hidden"
             style={{ background: "var(--sidebar)" }}
           >
             {/* Logo */}
             <div className="flex items-center gap-3 px-5 py-5">
-              <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center glow-teal">
+              <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center">
                 <Beaker className="h-4 w-4 text-primary" />
               </div>
               <div>
@@ -91,13 +93,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.to}
                     to={item.to}
-                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
+                    className={`group flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${
                       active
-                        ? "bg-primary/10 text-primary font-medium shadow-[inset_0_0_0_1px_oklch(0.76_0.14_190/15%)]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-tint/[3%]"
+                        ? "bg-accent text-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
                     }`}
                   >
-                    <item.icon className={`h-4 w-4 transition-transform duration-150 ${active ? "" : "group-hover:scale-110"}`} />
+                    <item.icon className="h-4 w-4" />
                     {item.label}
                   </Link>
                 );
@@ -106,8 +108,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <div className="sep-gradient mx-4" />
 
+            {activeServer?.url && (
+              <div className="px-3 py-2">
+                <a
+                  href={`${activeServer.url.replace(/\/api\/?$/, '')}/docs`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+                >
+                  <FileJson2 className="h-4 w-4" />
+                  API Docs
+                </a>
+              </div>
+            )}
+
+            <div className="sep-gradient mx-4" />
+
             <div className="px-4 py-3 flex items-center justify-between">
-              <p className="text-[10px] text-muted-foreground/60 font-mono tracking-wide">v{version}</p>
+              <p className="text-[10px] text-muted-foreground font-mono tracking-wide">v{version}</p>
               <div className="flex gap-1">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/60 animate-pulse-dot" />
               </div>
@@ -118,11 +136,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex items-center h-12 px-4 border-b border-border/30 shrink-0 glass-subtle gap-3">
+        <header className="flex items-center h-12 px-4 border-b border-border shrink-0 bg-background gap-3">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 hover:bg-tint/[5%] transition-colors"
+            className="h-7 w-7 p-0 hover:bg-accent transition-colors"
             onClick={toggleSidebar}
           >
             <Menu className="h-4 w-4" />
@@ -130,7 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Breadcrumbs />
           <div className="flex-1" />
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center rounded-lg border border-border/30 bg-tint/[3%] p-0.5">
+            <div className="flex items-center rounded-lg border border-border bg-muted/50 p-0.5">
               {([
                 { value: "light" as const, icon: Sun, label: "Light" },
                 { value: "system" as const, icon: Monitor, label: "System" },
@@ -143,7 +161,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   className={`h-6 w-6 rounded-md flex items-center justify-center transition-all duration-150 ${
                     theme === value
                       ? "bg-primary/15 text-primary shadow-sm"
-                      : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-tint/[5%]"
+                      : "text-muted-foreground hover:text-muted-foreground hover:bg-accent"
                   }`}
                 >
                   <Icon className="h-3 w-3" />

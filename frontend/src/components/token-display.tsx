@@ -7,7 +7,7 @@ export function TokenDisplay({ prompt, completion, cost, source }: {
   source?: string;
 }) {
   return (
-    <div className="flex items-center gap-3 text-[11px] font-mono text-muted-foreground/60">
+    <div className="flex items-center gap-3 text-[11px] font-mono text-muted-foreground">
       <span title="Prompt tokens" className="flex items-center gap-0.5">
         <span className="text-cyan-400/60">↑</span>{formatNumber(prompt)}
       </span>
@@ -17,10 +17,10 @@ export function TokenDisplay({ prompt, completion, cost, source }: {
       {cost > 0 ? (
         <span className="text-amber-400/80" title="Estimated cost">${cost.toFixed(4)}</span>
       ) : (
-        <span className="text-muted-foreground/30" title="Seat-based">Seat</span>
+        <span className="text-muted-foreground" title="Seat-based">Seat</span>
       )}
       {source && (
-        <span className={source === "provider_reported" ? "text-emerald-400/60" : "text-muted-foreground/30"}>
+        <span className={source === "provider_reported" ? "text-emerald-400/60" : "text-muted-foreground"}>
           {source === "provider_reported" ? "●" : "○"}
         </span>
       )}
@@ -29,7 +29,7 @@ export function TokenDisplay({ prompt, completion, cost, source }: {
 }
 
 export function TimeAgo({ date }: { date: string }) {
-  return <span className="text-[11px] text-muted-foreground/50 font-mono">{formatDistanceToNow(date)}</span>;
+  return <span className="text-[11px] text-muted-foreground font-mono">{formatDistanceToNow(date)}</span>;
 }
 
 function formatNumber(n: number): string {

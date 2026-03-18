@@ -304,7 +304,7 @@ export default function ChannelsPage() {
               setShowCreate(true);
             }
           }}
-          className="gap-2 bg-primary/90 hover:bg-primary text-primary-foreground shadow-lg shadow-primary/10 active:scale-95 transition-all"
+          className="gap-2 bg-primary/90 hover:bg-primary text-primary-foreground shadow-sm active:scale-95 transition-all"
         >
           <Plus className="h-4 w-4" /> Add Channel
         </Button>
@@ -329,14 +329,14 @@ export default function ChannelsPage() {
                 placeholder="Channel name (e.g. my-discord)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-9 text-sm bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors"
+                className="h-9 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors"
               />
 
               {/* Channel type selector — hidden in edit mode */}
               {!editChannel && (
                 <div className="flex items-center gap-2">
                   <Select value={channelType} onValueChange={(v) => v && handleTypeChange(v)}>
-                    <SelectTrigger className="h-10 w-72 text-sm bg-tint/[3%] border-border/50">
+                    <SelectTrigger className="h-10 w-72 text-sm bg-muted/50 border-border">
                       <SelectValue placeholder="Select channel type" />
                     </SelectTrigger>
                     <SelectContent className="w-72">
@@ -348,7 +348,7 @@ export default function ChannelsPage() {
                               <Icon className={`h-4 w-4 ${CHANNEL_COLORS[t.name] ?? ""}`} />
                               <span className="flex flex-col">
                                 <span className="font-medium">{t.label}</span>
-                                <span className="text-[11px] text-muted-foreground/50">{CHANNEL_DESCRIPTIONS[t.name]}</span>
+                                <span className="text-[11px] text-muted-foreground">{CHANNEL_DESCRIPTIONS[t.name]}</span>
                               </span>
                             </span>
                           </SelectItem>
@@ -361,7 +361,7 @@ export default function ChannelsPage() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-10 px-3 text-xs gap-1.5 text-muted-foreground/60 hover:text-primary shrink-0"
+                      className="h-10 px-3 text-xs gap-1.5 text-muted-foreground hover:text-primary shrink-0"
                       onClick={() => setSetupGuide(channelType)}
                     >
                       <HelpCircle className="h-3.5 w-3.5" />
@@ -377,7 +377,7 @@ export default function ChannelsPage() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-3 text-xs gap-1.5 text-muted-foreground/60 hover:text-primary w-fit"
+                  className="h-8 px-3 text-xs gap-1.5 text-muted-foreground hover:text-primary w-fit"
                   onClick={() => setSetupGuide(editChannel.channel_type)}
                 >
                   <HelpCircle className="h-3.5 w-3.5" />
@@ -388,12 +388,12 @@ export default function ChannelsPage() {
               {/* Dynamic config fields */}
               {currentTypeInfo && (
                 <div className="space-y-3">
-                  <p className="text-[11px] text-muted-foreground/60 font-medium uppercase tracking-wider">
+                  <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
                     Configuration
                   </p>
                   {currentTypeInfo.config_fields.map((field) => (
                     <div key={field.key}>
-                      <label className="text-xs text-muted-foreground/60 mb-1 block">{field.label}</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">{field.label}</label>
                       <Input
                         type={field.type === "password" ? "password" : "text"}
                         placeholder={field.placeholder}
@@ -401,7 +401,7 @@ export default function ChannelsPage() {
                         onChange={(e) =>
                           setConfig((prev) => ({ ...prev, [field.key]: e.target.value }))
                         }
-                        className="h-9 text-sm font-mono bg-tint/[3%] border-border/50 focus:border-primary/40 transition-colors"
+                        className="h-9 text-sm font-mono bg-muted/50 border-border focus:border-primary/40 transition-colors"
                         autoComplete="off"
                       />
                     </div>
@@ -412,7 +412,7 @@ export default function ChannelsPage() {
               {/* Notification event toggles */}
               {(channelType || editChannel) && (
                 <div className="space-y-3">
-                  <p className="text-[11px] text-muted-foreground/60 font-medium uppercase tracking-wider">
+                  <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
                     Notification Events
                   </p>
                   <div className="grid grid-cols-1 gap-2">
@@ -426,13 +426,13 @@ export default function ChannelsPage() {
                           className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition-all ${
                             active
                               ? "bg-primary/10 border border-primary/20 text-foreground"
-                              : "bg-tint/[2%] border border-border/20 text-muted-foreground hover:bg-tint/[4%]"
+                              : "bg-muted/50 border border-border text-muted-foreground hover:bg-accent"
                           }`}
                         >
                           <span className="text-base">{info.icon}</span>
                           <div className="flex-1 min-w-0">
                             <span className="font-medium text-xs block">{info.label}</span>
-                            <span className="text-[11px] text-muted-foreground/60 block">{info.description}</span>
+                            <span className="text-[11px] text-muted-foreground block">{info.description}</span>
                           </div>
                           <Switch
                             checked={active}
@@ -448,12 +448,12 @@ export default function ChannelsPage() {
 
               {/* Commands toggle */}
               {(currentTypeInfo?.supports_commands || editChannel) && (
-                <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-tint/[2%] border border-border/20">
+                <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/50 border border-border">
                   <div className="flex items-center gap-2">
                     <Terminal className="h-4 w-4 text-primary/60" />
                     <div>
                       <span className="text-xs font-medium block">Remote Commands</span>
-                      <span className="text-[11px] text-muted-foreground/60 block">
+                      <span className="text-[11px] text-muted-foreground block">
                         Control runs via /status, /continue, /cancel, etc.
                       </span>
                     </div>
@@ -500,9 +500,9 @@ export default function ChannelsPage() {
           animate={{ opacity: 1 }}
           className="glass rounded-xl p-12 text-center"
         >
-          <Bell className="h-10 w-10 mx-auto text-muted-foreground/20 mb-4" />
-          <p className="text-sm text-muted-foreground/60">No notification channels configured</p>
-          <p className="text-xs text-muted-foreground/40 mt-1">
+          <Bell className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
+          <p className="text-sm text-muted-foreground">No notification channels configured</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Add a Discord webhook, Telegram bot, or Slack webhook to get notified about your runs
           </p>
         </motion.div>
@@ -523,7 +523,7 @@ export default function ChannelsPage() {
             <div className="flex items-center gap-2">
               <Icon className={`h-4 w-4 ${color}`} />
               <span className="text-sm font-semibold capitalize">{type}</span>
-              <span className="text-xs text-muted-foreground/50">— {desc}</span>
+              <span className="text-xs text-muted-foreground">— {desc}</span>
             </div>
 
             <div className="space-y-2">
@@ -556,13 +556,13 @@ export default function ChannelsPage() {
                       {ch.notification_events.map((evt) => (
                         <span
                           key={evt}
-                          className="text-[10px] px-1.5 py-0.5 rounded bg-tint/[5%] text-muted-foreground/60 font-mono"
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
                         >
                           {EVENT_LABELS[evt]?.icon} {evt}
                         </span>
                       ))}
                     </div>
-                    <p className="text-[11px] text-muted-foreground/40 mt-1">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       Created {formatDistanceToNow(ch.created_at)}
                     </p>
                   </div>
@@ -572,7 +572,7 @@ export default function ChannelsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground/60 hover:text-primary"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
                       title="Validate connection"
                       onClick={() => handleValidate(ch.id)}
                       disabled={validating[ch.id]}
@@ -586,7 +586,7 @@ export default function ChannelsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground/60 hover:text-primary"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
                       title="Send test notification"
                       onClick={() => handleTest(ch.id)}
                       disabled={testing[ch.id]}
@@ -600,7 +600,7 @@ export default function ChannelsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground/60 hover:text-amber-400"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-amber-400"
                       title={ch.is_active ? "Disable" : "Enable"}
                       onClick={() => handleToggleActive(ch)}
                     >
@@ -609,7 +609,7 @@ export default function ChannelsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground/60 hover:text-foreground"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                       title="Edit"
                       onClick={() => openEdit(ch)}
                     >
@@ -618,7 +618,7 @@ export default function ChannelsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground/60 hover:text-red-400"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
                       title="Delete"
                       onClick={() => setDeleteId(ch.id)}
                     >
@@ -643,7 +643,7 @@ export default function ChannelsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
               onClick={() => setSetupGuide(null)}
             >
               <motion.div
@@ -662,7 +662,7 @@ export default function ChannelsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0 text-muted-foreground/60 hover:text-foreground"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                     onClick={() => setSetupGuide(null)}
                   >
                     <X className="h-4 w-4" />

@@ -45,19 +45,19 @@ export default function ProjectDetailPage() {
       >
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 glow-teal">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
               <FolderOpen className="h-6 w-6 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
               {project.description && <p className="text-sm text-muted-foreground mt-1">{project.description}</p>}
-              <p className="text-[11px] font-mono text-muted-foreground/50 mt-1">{project.source_path}</p>
+              <p className="text-[11px] font-mono text-muted-foreground mt-1">{project.source_path}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
           <Button
             onClick={() => setNewRunOpen(true)}
-            className="gap-2 bg-primary/90 hover:bg-primary text-primary-foreground shadow-lg shadow-primary/10 active:scale-95 transition-all"
+            className="gap-2 bg-primary/90 hover:bg-primary text-primary-foreground shadow-sm active:scale-95 transition-all"
           >
             <Plus className="h-4 w-4" /> New Run
           </Button>
@@ -97,7 +97,7 @@ export default function ProjectDetailPage() {
                 {project.best_run_id && project.best_iteration != null && (
                   <Link
                     to={`/projects/${projectId}/runs/${project.best_run_id}`}
-                    className="text-[10px] font-mono text-muted-foreground/50 hover:text-primary/70 transition-colors mt-1 inline-block"
+                    className="text-[10px] font-mono text-muted-foreground hover:text-primary/70 transition-colors mt-1 inline-block"
                   >
                     run {project.best_run_id.slice(0, 8)} · iter #{project.best_iteration}
                   </Link>
@@ -138,21 +138,21 @@ export default function ProjectDetailPage() {
             >
               <StatusBadge state={r.state as RunState} />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-mono text-foreground/70">{r.id.slice(0, 8)}</p>
+                <p className="text-xs font-mono text-muted-foreground">{r.id.slice(0, 8)}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   <span className="font-mono">{r.provider}/{r.model}</span>
-                  <span className="mx-1.5 text-muted-foreground/30">·</span>
+                  <span className="mx-1.5 text-muted-foreground">·</span>
                   iter {r.iteration}
                   {r.best_val_bpb != null && (
                     <>
-                      <span className="mx-1.5 text-muted-foreground/30">·</span>
+                      <span className="mx-1.5 text-muted-foreground">·</span>
                       <span className="text-emerald-400 font-mono">bpb {r.best_val_bpb.toFixed(4)}</span>
                     </>
                   )}
                 </p>
               </div>
-              <span className="text-[11px] text-muted-foreground/50 font-mono shrink-0">{formatDistanceToNow(r.created_at)}</span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground/20 group-hover:text-muted-foreground/50 shrink-0 transition-colors" />
+              <span className="text-[11px] text-muted-foreground font-mono shrink-0">{formatDistanceToNow(r.created_at)}</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground shrink-0 transition-colors" />
             </Link>
           </motion.div>
         ))}
@@ -160,7 +160,7 @@ export default function ProjectDetailPage() {
         {/* Infinite scroll sentinel */}
         {hasNextPage && (
           <div ref={sentinelRef} className="flex items-center justify-center py-4">
-            {isFetchingNextPage && <Loader2 className="h-5 w-5 text-muted-foreground/40 animate-spin" />}
+            {isFetchingNextPage && <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />}
           </div>
         )}
 

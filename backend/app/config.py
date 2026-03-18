@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    model_config = {"env_prefix": "AR_", "env_file": ".env"}
+    model_config = {"env_prefix": "AR_", "env_file": ".env", "extra": "ignore"}
 
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/autoresearch"
     database_url_sync: str = "postgresql://postgres:postgres@localhost:5432/autoresearch"
@@ -14,9 +14,6 @@ class Settings(BaseSettings):
     max_run_memory_records: int = 5
 
     cors_origins: list[str] = ["*"]
-
-    # Optional API key for remote access — if empty, auth is disabled
-    api_key: str = ""
 
 
 settings = Settings()

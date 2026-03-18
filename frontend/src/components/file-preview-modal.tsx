@@ -75,8 +75,8 @@ export function FilePreviewModal({ open, onClose, filename, content, onSave }: P
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { setEditing(false); onClose(); } }}>
-      <DialogContent showCloseButton={false} className="sm:max-w-[90vw] max-h-[85vh] flex flex-col glass border-white/[6%] p-0 gap-0" overlayClassName="backdrop-blur-none">
-        <DialogHeader className="px-5 py-3 border-b border-border/20 shrink-0">
+      <DialogContent showCloseButton={false} className="sm:max-w-[90vw] max-h-[85vh] flex flex-col glass border-border p-0 gap-0" overlayClassName="backdrop-blur-none">
+        <DialogHeader className="px-5 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-2.5">
             <div className={`h-7 w-7 rounded-md flex items-center justify-center ${
               isPython ? "bg-amber-500/10" : "bg-blue-500/10"
@@ -89,7 +89,7 @@ export function FilePreviewModal({ open, onClose, filename, content, onSave }: P
             <div className="flex items-center gap-1">
               <button
                 onClick={handleCopy}
-                className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-tint/[5%] text-muted-foreground hover:text-foreground transition-colors"
+                className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                 title={copied ? "Copied" : "Copy to clipboard"}
               >
                 {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -97,7 +97,7 @@ export function FilePreviewModal({ open, onClose, filename, content, onSave }: P
               {onSave && (
                 <button
                   onClick={handleToggleEdit}
-                  className={`h-7 w-7 rounded-md flex items-center justify-center hover:bg-tint/[5%] transition-colors ${
+                  className={`h-7 w-7 rounded-md flex items-center justify-center hover:bg-accent transition-colors ${
                     editing ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                   title={editing ? "Preview" : "Edit"}
@@ -117,7 +117,7 @@ export function FilePreviewModal({ open, onClose, filename, content, onSave }: P
               <div className="w-px h-4 bg-border/30 mx-0.5" />
               <button
                 onClick={onClose}
-                className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-tint/[5%] text-muted-foreground hover:text-foreground transition-colors"
+                className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                 title="Close"
               >
                 <X className="h-3.5 w-3.5" />
