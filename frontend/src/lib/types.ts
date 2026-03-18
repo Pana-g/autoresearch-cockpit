@@ -161,6 +161,17 @@ export interface CompactionInfo {
   context_limit: number;
 }
 
+export interface ContextUsage {
+  prompt_tokens: number;
+  context_limit: number;
+  usage_pct: number;
+  threshold_pct: number;
+  threshold_tokens: number;
+  compacted: boolean;
+  compacted_up_to: number | null;
+  memory_count: number;
+}
+
 /* ── SSE event types ─────────────────────────────────── */
 
 export type SSEEventType =
@@ -193,4 +204,40 @@ export type SSEEventType =
 export interface SSEMessage {
   event: SSEEventType;
   data: Record<string, unknown>;
+}
+
+/* ── Notification Channels ───────────────────────────── */
+
+export type NotificationEventType =
+  | "new_best"
+  | "training_failed"
+  | "run_completed"
+  | "run_failed"
+  | "patch_ready"
+  | "iteration_started"
+  | "run_canceled";
+
+export interface ChannelTypeInfo {
+  name: string;
+  label: string;
+  config_fields: {
+    key: string;
+    label: string;
+    type: "text" | "url" | "password";
+    required: boolean;
+    placeholder: string;
+  }[];
+  supports_commands: boolean;
+}
+
+export interface NotificationChannel {
+  id: string;
+  name: string;
+  channel_type: string;
+  is_active: boolean;
+  notification_events: NotificationEventType[];
+  commands_enabled: boolean;
+  linked_run_id: string | null;
+  created_at: string;
+  updated_at: string;
 }

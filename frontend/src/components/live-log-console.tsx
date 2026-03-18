@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/stores/ui-store";
 import { Pause, Play, Terminal } from "lucide-react";
+
+const MAX_VISIBLE_LINES = 500;
 
 export function LiveLogConsole({ onCancel }: { onCancel?: () => void }) {
   const { trainingLog } = useUIStore();
@@ -10,11 +12,17 @@ export function LiveLogConsole({ onCancel }: { onCancel?: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
 
+  // Only render the tail to keep DOM size bounded
+  const visibleLines = useMemo(() => {
+    if (trainingLog.length <= MAX_VISIBLE_LINES) return trainingLog;
+    return trainingLog.slice(-MAX_VISIBLE_LINES);
+  }, [trainingLog]);
+
   useEffect(() => {
     if (autoScroll && bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [trainingLog, autoScroll]);
+  }, [trainingLog.length, autoScroll]);
 
   const handleScroll = () => {
     const el = containerRef.current;
@@ -24,7 +32,7 @@ export function LiveLogConsole({ onCancel }: { onCancel?: () => void }) {
   };
 
   return (
-    <div className="flex flex-col h-full glass rounded-xl overflow-hidden animate-breathe">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/20">
         <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
@@ -62,13 +70,18 @@ export function LiveLogConsole({ onCancel }: { onCancel?: () => void }) {
           onScroll={handleScroll}
           className="p-4 font-mono text-[12px] leading-5 text-zinc-400 overflow-auto max-h-[500px]"
         >
-          {trainingLog.length === 0 && (
+          {visibleLines.length === 0 && (
             <div className="flex items-center gap-2 text-muted-foreground/40 italic">
               <div className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse-dot" />
               Waiting for training output...
             </div>
           )}
-          {trainingLog.map((line, i) => {
+          {trainingLog.length > MAX_VISIBLE_LINES && (
+            <div className="text-muted-foreground/30 text-[11px] mb-1">
+              … {trainingLog.length - MAX_VISIBLE_LINES} earlier lines truncated
+            </div>
+          )}
+          {visibleLines.map((line, i) => {
             const isBpb = /val_bpb/i.test(line);
             return (
               <div

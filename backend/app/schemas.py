@@ -125,6 +125,15 @@ class AgentStepResponse(BaseModel):
 
 
 # ── Training Steps ────────────────────────────────────────
+class TrainingStepChartPoint(BaseModel):
+    iteration: int
+    val_bpb: float | None
+    improved: bool | None
+    status: str
+
+    model_config = {"from_attributes": True}
+
+
 class TrainingStepResponse(BaseModel):
     id: str
     run_id: str
@@ -248,3 +257,68 @@ class CompactionResponse(BaseModel):
     auto_compact: bool = True
     compact_threshold_pct: int = 50
     context_limit: int = 0
+
+
+class ContextUsageResponse(BaseModel):
+    prompt_tokens: int = 0
+    context_limit: int = 0
+    usage_pct: float = 0.0
+    threshold_pct: int = 50
+    threshold_tokens: int = 0
+    compacted: bool = False
+    compacted_up_to: int | None = None
+    memory_count: int = 0
+
+
+# ── Notification Channels ────────────────────────────────
+
+NOTIFICATION_EVENT_TYPES = [
+    "new_best",
+    "training_failed",
+    "run_completed",
+    "run_failed",
+    "patch_ready",
+    "iteration_started",
+    "run_canceled",
+]
+
+
+class ChannelTypeInfoResponse(BaseModel):
+    name: str
+    label: str
+    config_fields: list[dict] = Field(default_factory=list)
+    supports_commands: bool = False
+
+
+class ChannelCreate(BaseModel):
+    name: str
+    channel_type: str
+    config: dict  # raw config (will be encrypted)
+    notification_events: list[str] = Field(
+        default=["new_best", "training_failed", "run_completed", "run_failed"]
+    )
+    commands_enabled: bool = False
+    linked_run_id: str | None = None
+
+
+class ChannelUpdate(BaseModel):
+    name: str | None = None
+    config: dict | None = None
+    notification_events: list[str] | None = None
+    commands_enabled: bool | None = None
+    is_active: bool | None = None
+    linked_run_id: str | None = None
+
+
+class ChannelResponse(BaseModel):
+    id: str
+    name: str
+    channel_type: str
+    is_active: bool
+    notification_events: list[str] = Field(default_factory=list)
+    commands_enabled: bool
+    linked_run_id: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}

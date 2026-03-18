@@ -1,4 +1,4 @@
-"""SSE event bus — one channel per run."""
+"""SSE event bus — one channel per run, plus global subscribers for notifications."""
 
 import asyncio
 import json
@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 # run_id → set of subscriber queues
 _subscribers: dict[str, set[asyncio.Queue]] = defaultdict(set)
+
+# Global subscribers receive events for ALL runs (used by notification service)
+_global_subscribers: set[asyncio.Queue] = set()
 
 # run_id → current agent phase snapshot (only while agent is streaming)
 _agent_snapshots: dict[str, dict[str, Any]] = {}
@@ -73,3 +76,21 @@ async def publish(run_id: str, event: str, data: Any = None) -> None:
             q.put_nowait(payload)
         except asyncio.QueueFull:
             logger.warning("Dropping SSE event for run %s — queue full", run_id)
+    # Fan-out to global subscribers (notification service, etc.)
+    global_payload = json.dumps({"event": event, "data": data, "run_id": run_id})
+    for q in list(_global_subscribers):
+        try:
+            q.put_nowait(global_payload)
+        except asyncio.QueueFull:
+            logger.warning("Dropping global event %s — queue full", event)
+
+
+async def subscribe_global() -> asyncio.Queue:
+    """Subscribe to events for ALL runs. Used by the notification service."""
+    q: asyncio.Queue = asyncio.Queue(maxsize=500)
+    _global_subscribers.add(q)
+    return q
+
+
+def unsubscribe_global(q: asyncio.Queue) -> None:
+    _global_subscribers.discard(q)

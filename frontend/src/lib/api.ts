@@ -1,8 +1,11 @@
 import type {
   AgentStep,
+  ChannelTypeInfo,
   CompactionInfo,
   Credential,
   GitLogEntry,
+  NotificationChannel,
+  NotificationEventType,
   Project,
   ProviderInfo,
   Run,
@@ -13,6 +16,8 @@ import type {
   UsageSummary,
 } from "./types";
 import { useConnectionStore } from "@/stores/connection-store";
+
+type ContextUsage = Record<string, unknown>;
 
 /** Get the active server's base URL */
 function getBase(): string {
@@ -93,6 +98,8 @@ export const runs = {
     request<AgentStep[]>(`/projects/${projectId}/runs/${runId}/agent-steps?limit=${limit}&offset=${offset}`),
   trainingSteps: (projectId: string, runId: string, limit = 25, offset = 0) =>
     request<TrainingStep[]>(`/projects/${projectId}/runs/${runId}/training-steps?limit=${limit}&offset=${offset}`),
+  chartData: (projectId: string, runId: string) =>
+    request<{ iteration: number; val_bpb: number | null; improved: boolean | null; status: string }[]>(`/projects/${projectId}/runs/${runId}/chart-data`),
   gitLog: (projectId: string, runId: string) =>
     request<GitLogEntry[]>(`/projects/${projectId}/runs/${runId}/git-log`),
   rollback: (projectId: string, runId: string, commitSha: string) =>
@@ -134,6 +141,8 @@ export const runs = {
     }),
   getCompaction: (projectId: string, runId: string) =>
     request<CompactionInfo>(`/projects/${projectId}/runs/${runId}/compaction`),
+  getContextUsage: (projectId: string, runId: string) =>
+    request<ContextUsage>(`/projects/${projectId}/runs/${runId}/context-usage`),
   applyCompaction: (projectId: string, runId: string) =>
     request<{ status: string; compacted_up_to: number }>(`/projects/${projectId}/runs/${runId}/compaction/apply`, {
       method: "POST",
@@ -233,6 +242,35 @@ export const usage = {
     const qs = runId ? `?run_id=${runId}` : "";
     return request<UsageSummary>(`/usage/summary${qs}`);
   },
+};
+
+/* ── Notification Channels ────────────────────────────── */
+
+export const channels = {
+  types: () => request<ChannelTypeInfo[]>("/channel-types"),
+  eventTypes: () => request<string[]>("/notification-event-types"),
+  list: () => request<NotificationChannel[]>("/channels"),
+  create: (body: {
+    name: string;
+    channel_type: string;
+    config: Record<string, string>;
+    notification_events?: NotificationEventType[];
+    commands_enabled?: boolean;
+    linked_run_id?: string | null;
+  }) =>
+    request<NotificationChannel>("/channels", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: {
+    name?: string;
+    config?: Record<string, string>;
+    notification_events?: NotificationEventType[];
+    commands_enabled?: boolean;
+    is_active?: boolean;
+    linked_run_id?: string | null;
+  }) =>
+    request<NotificationChannel>(`/channels/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  delete: (id: string) => request<void>(`/channels/${id}`, { method: "DELETE" }),
+  test: (id: string) => request<{ status: string }>(`/channels/${id}/test`, { method: "POST" }),
+  validate: (id: string) => request<{ valid: boolean; error?: string }>(`/channels/${id}/validate`, { method: "POST" }),
 };
 
 /* ── SSE helpers ──────────────────────────────────────── */

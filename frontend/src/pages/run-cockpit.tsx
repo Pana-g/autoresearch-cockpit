@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useRun, useAgentSteps, useTrainingSteps, useRunAction, useUsageSummary, useCreateRun, useUpdateRunSettings, useCheckpointRestart, useSetProjectBest } from "@/hooks/use-queries";
+import { useRun, useAgentSteps, useTrainingSteps, useRunAction, useUsageSummary, useCreateRun, useUpdateRunSettings, useCheckpointRestart, useSetProjectBest, useContextUsage, useApplyCompaction } from "@/hooks/use-queries";
 import { useRunSSE } from "@/hooks/use-sse";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard";
 import { useUIStore } from "@/stores/ui-store";
@@ -8,12 +8,13 @@ import { StatusBadge } from "@/components/status-badge";
 import { StepTimeline } from "@/components/step-timeline";
 import { PatchReview } from "@/components/patch-review";
 import { LiveLogConsole } from "@/components/live-log-console";
+import { IterationChart } from "@/components/iteration-chart";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TokenDisplay } from "@/components/token-display";
 import { MessageComposer } from "@/components/message-composer";
 import { WorkspaceViewer } from "@/components/workspace-viewer";
-import { AgentThinkingView } from "@/components/agent-thinking";
+import { AgentThinkingView, PhaseIndicator as AgentPhaseIndicator } from "@/components/agent-thinking";
 import { TrainingInfoCard } from "@/components/training-info-card";
 import { ModelSelector } from "@/components/model-selector";
 import { CompactionModal } from "@/components/compaction-modal";
@@ -22,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { NumberInput } from "@/components/number-input";
 import {
-  Play, Pause, Square, RotateCcw, Zap, GitBranch, Activity, Brain, Target, Hash, RefreshCw, ShieldCheck, FastForward, Bot, FileCode, Flame, BarChart3, StopCircle, Timer, TrendingDown, Rocket, Ban, Loader2, Layers, Gauge, FileText,
+  Play, Pause, Square, RotateCcw, Zap, GitBranch, Activity, Brain, Target, Hash, RefreshCw, ShieldCheck, FastForward, Bot, FileCode, Flame, BarChart3, StopCircle, Timer, TrendingDown, Rocket, Ban, Loader2, Layers, Gauge, FileText, ChevronDown, ChevronUp, Shrink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -42,7 +43,8 @@ export default function RunCockpitPage() {
   const createRun = useCreateRun();
   const checkpointRestart = useCheckpointRestart(projectId!, runId!);
   const setProjectBest = useSetProjectBest(projectId!);
-  const { agentStream, agentPhase } = useUIStore();
+  const { data: ctxUsage } = useContextUsage(projectId!, runId!);
+  const applyCompaction = useApplyCompaction(projectId!, runId!);
 
   useRunSSE(projectId!, runId!);
 
@@ -268,33 +270,101 @@ export default function RunCockpitPage() {
 
               <div className="mt-3 pt-3 border-t border-border/20 space-y-2.5">
                 <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-2">Context</p>
+
+                {/* Context usage bar */}
+                {ctxUsage && (
+                  <div className="px-2 space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-muted-foreground/70 font-medium">
+                        {(ctxUsage.prompt_tokens / 1000).toFixed(1)}k{" / "}
+                        {(ctxUsage.context_limit / 1000).toFixed(0)}k tokens
+                      </span>
+                      <span
+                        className={`font-mono font-semibold ${
+                          ctxUsage.usage_pct >= 80 ? "text-red-400" : ctxUsage.usage_pct >= ctxUsage.threshold_pct ? "text-amber-400" : "text-emerald-400"
+                        }`}
+                      >
+                        {ctxUsage.usage_pct.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="relative h-2 rounded-full bg-border/30 overflow-hidden">
+                      {/* Threshold marker */}
+                      <div
+                        className="absolute top-0 bottom-0 w-px bg-amber-400/50 z-10"
+                        style={{ left: `${Math.min(ctxUsage.threshold_pct, 100)}%` }}
+                      />
+                      {/* Fill */}
+                      <motion.div
+                        className={`h-full rounded-full ${
+                          ctxUsage.usage_pct >= 80
+                            ? "bg-gradient-to-r from-red-500 to-red-400"
+                            : ctxUsage.usage_pct >= ctxUsage.threshold_pct
+                              ? "bg-gradient-to-r from-amber-500 to-amber-400"
+                              : "bg-gradient-to-r from-emerald-600 to-emerald-400"
+                        }`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(ctxUsage.usage_pct, 100)}%` }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                      />
+                    </div>
+                    {ctxUsage.compacted && (
+                      <div className="flex items-center gap-1 text-[10px] text-orange-400/70">
+                        <Layers className="h-3 w-3" />
+                        <span>{ctxUsage.memory_count} memories compacted</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Auto-compact + threshold */}
                 <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-tint/[2%] transition-colors">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Layers className="h-3.5 w-3.5 text-orange-400" />
                     <span>Auto-compact</span>
                   </div>
-                  <Switch
-                    checked={run.auto_compact}
-                    onCheckedChange={(checked) => updateSettings.mutate({ auto_compact: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-tint/[2%] transition-colors">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Gauge className="h-3.5 w-3.5 text-orange-400" />
-                    <span>Threshold %</span>
+                  <div className="flex items-center gap-2">
+                    {run.auto_compact && (
+                      <NumberInput
+                        integer
+                        min={10}
+                        max={95}
+                        className="w-14 h-6 text-[10px] text-right font-mono bg-tint/[3%] border-border/40"
+                        value={run.compact_threshold_pct}
+                        placeholder="50"
+                        onCommit={(val) => updateSettings.mutate({ compact_threshold_pct: val ?? 50 })}
+                      />
+                    )}
+                    <Switch
+                      checked={run.auto_compact}
+                      onCheckedChange={(checked) => updateSettings.mutate({ auto_compact: checked })}
+                    />
                   </div>
-                  <NumberInput
-                    integer
-                    min={10}
-                    max={95}
-                    className="w-16 h-7 text-xs text-right font-mono bg-tint/[3%] border-border/40"
-                    value={run.compact_threshold_pct}
-                    placeholder="50"
-                    onCommit={(val) => {
-                      updateSettings.mutate({ compact_threshold_pct: val ?? 50 });
-                    }}
-                  />
                 </div>
+
+                {/* Compact Now button */}
+                {run.iteration > 5 && (
+                  <button
+                    onClick={() => {
+                      applyCompaction.mutate(undefined, {
+                        onSuccess: () => toast.success("Context compacted successfully"),
+                        onError: (err: Error) => toast.error(`Compaction failed: ${err.message}`),
+                      });
+                    }}
+                    disabled={applyCompaction.isPending}
+                    className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium transition-all
+                      bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 active:scale-[0.97]
+                      disabled:opacity-40 disabled:pointer-events-none border border-orange-500/20 hover:border-orange-500/30"
+                  >
+                    {applyCompaction.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Shrink className="h-3.5 w-3.5" />
+                    )}
+                    <span>{applyCompaction.isPending ? "Compacting..." : "Compact Now"}</span>
+                  </button>
+                )}
+
+                {/* Compaction status */}
                 {run.compacted_up_to && (
                   <button
                     onClick={() => setCompactionModalOpen(true)}
@@ -304,18 +374,6 @@ export default function RunCockpitPage() {
                       <FileText className="h-3.5 w-3.5" />
                       <span>Compacted to iter {run.compacted_up_to}</span>
                       <span className="ml-auto text-[10px] text-muted-foreground/40 group-hover:text-muted-foreground/60">review →</span>
-                    </div>
-                  </button>
-                )}
-                {!run.compacted_up_to && run.iteration > 5 && (
-                  <button
-                    onClick={() => setCompactionModalOpen(true)}
-                    className="w-full text-left py-1.5 px-2 rounded-md hover:bg-tint/[4%] transition-colors group"
-                  >
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
-                      <FileText className="h-3.5 w-3.5" />
-                      <span>Compact memory</span>
-                      <span className="ml-auto text-[10px] text-muted-foreground/40 group-hover:text-muted-foreground/60">→</span>
                     </div>
                   </button>
                 )}
@@ -355,29 +413,30 @@ export default function RunCockpitPage() {
       {/* ── Center Panel: Active Step ────────────────────── */}
       <div className="flex-1 overflow-y-auto bg-grid">
         <div className="p-8 max-w-4xl mx-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={state}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25 }}
-            >
-              <CenterContent
-                state={state}
-                lastAgent={lastAgent}
-                lastTraining={lastTraining}
-                agentStream={agentStream}
-                agentPhase={agentPhase}
-                onAction={handleAction}
-                projectId={projectId!}
-                runId={runId!}
-                iteration={run.iteration}
-                bestValBpb={run.best_val_bpb}
-                model={`${run.provider}/${run.model}`}
-              />
-            </motion.div>
-          </AnimatePresence>
+          <IterationChart projectId={projectId!} runId={runId!} bestValBpb={run.best_val_bpb} />
+          <CollapsibleActivity state={state}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={state}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+              >
+                <CenterContent
+                  state={state}
+                  lastAgent={lastAgent}
+                  lastTraining={lastTraining}
+                  onAction={handleAction}
+                  projectId={projectId!}
+                  runId={runId!}
+                  iteration={run.iteration}
+                  bestValBpb={run.best_val_bpb}
+                  model={`${run.provider}/${run.model}`}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </CollapsibleActivity>
         </div>
       </div>
 
@@ -462,16 +521,94 @@ export default function RunCockpitPage() {
   );
 }
 
+/* ── Collapsible wrapper for the activity section ──────── */
+
+const ACTIVITY_META: Record<string, { icon: typeof Brain; label: string; iconBg: string; iconColor: string }> = {
+  agent_running:        { icon: Brain,      label: "Agent Working",        iconBg: "bg-cyan-500/10",    iconColor: "text-cyan-400"    },
+  awaiting_agent:       { icon: Brain,      label: "Agent Working",        iconBg: "bg-cyan-500/10",    iconColor: "text-cyan-400"    },
+  awaiting_patch_review:{ icon: FileCode,   label: "Patch Review",         iconBg: "bg-amber-500/10",   iconColor: "text-amber-400"   },
+  training_running:     { icon: Flame,      label: "Training",             iconBg: "bg-violet-500/10",  iconColor: "text-violet-400"  },
+  training_finished:    { icon: Activity,   label: "Training Complete",    iconBg: "bg-emerald-500/10", iconColor: "text-emerald-400" },
+  awaiting_next_action: { icon: Zap,        label: "Awaiting Action",      iconBg: "bg-amber-500/10",   iconColor: "text-amber-400"   },
+  idle:                 { icon: Rocket,     label: "Ready",                iconBg: "bg-cyan-500/10",    iconColor: "text-cyan-400"    },
+  preparing:            { icon: Loader2,    label: "Preparing",            iconBg: "bg-cyan-500/10",    iconColor: "text-cyan-400"    },
+  done:                 { icon: Target,     label: "Run Complete",         iconBg: "bg-emerald-500/10", iconColor: "text-emerald-400" },
+  failed:               { icon: RotateCcw,  label: "Failed",               iconBg: "bg-red-500/10",     iconColor: "text-red-400"     },
+  canceled:             { icon: Ban,        label: "Canceled",             iconBg: "bg-zinc-500/10",    iconColor: "text-zinc-400"    },
+  paused:               { icon: Pause,      label: "Paused",               iconBg: "bg-cyan-500/10",    iconColor: "text-cyan-400"    },
+};
+
+function CollapsibleActivity({ state, children }: { state: RunState; children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const meta = ACTIVITY_META[state] ?? { icon: Activity, label: state.replace(/_/g, " "), iconBg: "bg-cyan-500/10", iconColor: "text-cyan-400" };
+  const Icon = meta.icon;
+
+  // For agent states, read phase info to display in the header
+  const { agentPhase, agentStream } = useUIStore();
+  const isAgent = state === "agent_running" || state === "awaiting_agent";
+  const effectivePhase = isAgent
+    ? (agentPhase === "idle" && !agentStream ? undefined : agentPhase === "idle" ? "thinking" : agentPhase)
+    : undefined;
+
+  // Dynamic subtitle for the header
+  let subtitle: string | undefined;
+  if (isAgent && effectivePhase) {
+    subtitle = effectivePhase === "thinking" ? "Analyzing & reasoning..." : effectivePhase === "coding" ? "Generating patch..." : "Patch complete";
+  } else if (state === "training_running") {
+    subtitle = "Training in progress";
+  }
+
+  return (
+    <div className="glass rounded-xl overflow-hidden mb-6 transition-all duration-300">
+      <button
+        onClick={() => setCollapsed((c) => !c)}
+        className="w-full flex items-center justify-between px-5 py-3 hover:bg-tint/[3%] transition-colors cursor-pointer"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`h-7 w-7 rounded-lg ${meta.iconBg} flex items-center justify-center`}>
+            <Icon className={`h-3.5 w-3.5 ${meta.iconColor}`} />
+          </div>
+          <div className="flex flex-col items-start">
+            <span className="text-sm font-medium text-foreground/90">{meta.label}</span>
+            {subtitle && (
+              <span className="text-[11px] text-muted-foreground/60 font-mono">{subtitle}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {isAgent && effectivePhase && (
+            <AgentPhaseIndicator phase={effectivePhase} />
+          )}
+          {state === "training_running" && (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20">
+              <div className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse-dot" />
+              <span className="text-[9px] font-medium text-violet-400 uppercase tracking-wider">Running</span>
+            </div>
+          )}
+          {collapsed ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground/50" />
+          ) : (
+            <ChevronUp className="h-4 w-4 text-muted-foreground/50" />
+          )}
+        </div>
+      </button>
+      {!collapsed && (
+        <div className="px-4 pb-4">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Center panel content by state ─────────────────────── */
 
 function CenterContent({
-  state, lastAgent, lastTraining, agentStream, agentPhase, onAction, projectId, runId, iteration, bestValBpb, model,
+  state, lastAgent, lastTraining, onAction, projectId, runId, iteration, bestValBpb, model,
 }: {
   state: RunState;
   lastAgent?: AgentStep | null;
   lastTraining?: TrainingStep | null;
-  agentStream: string;
-  agentPhase: "idle" | "thinking" | "coding";
   onAction: (a: RunAction) => void;
   projectId: string;
   runId: string;
@@ -479,6 +616,10 @@ function CenterContent({
   bestValBpb: number | null;
   model: string;
 }) {
+  // Subscribe to streaming state here (not in the parent) so only this
+  // component re-renders on every agent chunk, not the entire cockpit.
+  const { agentStream, agentPhase } = useUIStore();
+
   if (state === "awaiting_patch_review" && lastAgent?.patch) {
     return (
       <PatchReview
@@ -494,7 +635,7 @@ function CenterContent({
     // yet (e.g. page just loaded, SSE not connected). Show a generic card.
     if (agentPhase === "idle" && !agentStream) {
       return (
-        <div className="glass rounded-xl p-8 text-center glow-teal">
+        <div className="p-8 text-center">
           <div className="h-12 w-12 rounded-xl bg-cyan-500/10 flex items-center justify-center mx-auto mb-4">
             <Brain className="h-6 w-6 text-cyan-400 animate-pulse-dot" />
           </div>
@@ -525,7 +666,7 @@ function CenterContent({
 
   if (state === "training_finished" && lastTraining) {
     return (
-      <div className="glass rounded-xl p-6 glow-green">
+      <div className="p-6">
         <div className="flex items-center gap-3 mb-5">
           <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
             <Activity className="h-4.5 w-4.5 text-emerald-400" />
@@ -567,7 +708,7 @@ function CenterContent({
       <div className="space-y-4">
         {/* Last training result summary */}
         {lastTraining && (
-          <div className={`glass rounded-xl p-5 ${lastTraining.improved ? "glow-green" : lastTraining.status === "failed" ? "glow-red border-red-500/15" : ""}`}>
+          <div className="p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
                 lastTraining.status === "failed"
@@ -628,7 +769,7 @@ function CenterContent({
         )}
 
         {/* Wake agent CTA */}
-        <div className="glass rounded-xl p-8 text-center glow-amber">
+        <div className="p-8 text-center">
           <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
             <Zap className="h-6 w-6 text-amber-400" />
           </div>
@@ -649,7 +790,7 @@ function CenterContent({
 
   if (state === "done") {
     return (
-      <div className="glass rounded-xl p-8 text-center glow-green">
+      <div className="p-8 text-center">
         <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
           <Target className="h-7 w-7 text-emerald-400" />
         </div>
@@ -667,7 +808,7 @@ function CenterContent({
 
   if (state === "failed") {
     return (
-      <div className="glass rounded-xl p-8 text-center glow-red border-red-500/15">
+      <div className="p-8 text-center">
         <div className="h-14 w-14 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
           <RotateCcw className="h-7 w-7 text-red-400" />
         </div>
@@ -685,7 +826,7 @@ function CenterContent({
 
   if (state === "idle") {
     return (
-      <div className="glass rounded-xl p-8 text-center glow-teal">
+      <div className="p-8 text-center">
         <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
           <Rocket className="h-7 w-7 text-primary" />
         </div>
@@ -705,7 +846,7 @@ function CenterContent({
 
   if (state === "canceled") {
     return (
-      <div className="glass rounded-xl p-8 text-center">
+      <div className="p-8 text-center">
         <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
           <Ban className="h-7 w-7 text-muted-foreground" />
         </div>
@@ -723,7 +864,7 @@ function CenterContent({
 
   if (state === "paused") {
     return (
-      <div className="glass rounded-xl p-8 text-center glow-amber">
+      <div className="p-8 text-center">
         <div className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
           <Pause className="h-7 w-7 text-amber-400" />
         </div>
@@ -741,7 +882,7 @@ function CenterContent({
 
   if (state === "preparing") {
     return (
-      <div className="glass rounded-xl p-8 text-center glow-teal">
+      <div className="p-8 text-center">
         <div className="h-14 w-14 rounded-2xl bg-cyan-500/10 flex items-center justify-center mx-auto mb-4">
           <Loader2 className="h-7 w-7 text-cyan-400 animate-spin" />
         </div>
@@ -753,7 +894,7 @@ function CenterContent({
 
   // Other / unknown states
   return (
-    <div className="glass rounded-xl p-8 text-center">
+    <div className="p-8 text-center">
       <p className="text-sm text-muted-foreground capitalize">{state.replace(/_/g, " ")}</p>
     </div>
   );

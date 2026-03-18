@@ -13,10 +13,12 @@ from app.schemas import (
     AgentStepResponse,
     CheckpointRestartRequest,
     CompactionResponse,
+    ContextUsageResponse,
     RunActionRequest,
     RunCreate,
     RunResponse,
     RunSettingsUpdate,
+    TrainingStepChartPoint,
     TrainingStepResponse,
 )
 from app.services import run_engine
@@ -256,6 +258,26 @@ async def list_training_steps(
     return result.scalars().all()
 
 
+@router.get("/{run_id}/chart-data", response_model=list[TrainingStepChartPoint])
+async def get_chart_data(
+    project_id: str,
+    run_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Lightweight endpoint returning only iteration/score/status for all training steps."""
+    result = await db.execute(
+        select(
+            TrainingStep.iteration,
+            TrainingStep.val_bpb,
+            TrainingStep.improved,
+            TrainingStep.status,
+        )
+        .where(TrainingStep.run_id == run_id)
+        .order_by(TrainingStep.iteration.asc())
+    )
+    return [TrainingStepChartPoint(iteration=r.iteration, val_bpb=r.val_bpb, improved=r.improved, status=r.status) for r in result.all()]
+
+
 @router.get("/{run_id}/git-log")
 async def get_git_log(project_id: str, run_id: str, db: AsyncSession = Depends(get_db)):
     ws_result = await db.execute(select(Workspace).where(Workspace.run_id == run_id))
@@ -419,6 +441,8 @@ async def update_train_py(
 from app.services.compaction import (
     build_compacted_summary,
     check_compaction_needed,
+    estimate_tokens,
+    get_context_limit,
 )
 
 
@@ -454,6 +478,74 @@ async def get_compaction(
         "auto_compact": run.auto_compact,
         "compact_threshold_pct": run.compact_threshold_pct,
         "context_limit": run.context_limit,
+    }
+
+
+@router.get("/{run_id}/context-usage", response_model=ContextUsageResponse)
+async def get_context_usage(
+    project_id: str, run_id: str, db: AsyncSession = Depends(get_db)
+):
+    """Estimate current context window usage for this run."""
+    import json as _json
+    from app.services.prompt_builder import build_agent_prompt
+
+    run = await db.get(Run, run_id)
+    if run is None or run.project_id != project_id:
+        raise HTTPException(404, "Run not found")
+
+    # Read workspace files
+    ws_result = await db.execute(select(Workspace).where(Workspace.run_id == run_id))
+    workspace = ws_result.scalar_one_or_none()
+
+    program_md = ""
+    train_py = ""
+    if workspace:
+        from pathlib import Path as _Path
+
+        prog_path = _Path(workspace.workspace_path) / "program.md"
+        train_path = _Path(workspace.workspace_path) / "train.py"
+        if prog_path.exists():
+            program_md = prog_path.read_text()
+        if train_path.exists():
+            train_py = train_path.read_text()
+
+    # Get memory records
+    mem_result = await db.execute(
+        select(RunMemory).where(RunMemory.run_id == run_id).order_by(RunMemory.iteration.desc())
+    )
+    memory_records = [
+        {"iteration": m.iteration, "summary": m.summary, "val_bpb": m.val_bpb, "improved": m.improved}
+        for m in mem_result.scalars().all()
+    ]
+
+    # Build the prompt to measure its size
+    messages = build_agent_prompt(
+        program_md=program_md,
+        train_py=train_py,
+        memory_records=memory_records,
+        latest_metrics=None,
+        human_notes=[],
+        iteration=run.iteration,
+        best_val_bpb=run.best_val_bpb,
+        overfit_floor=run.overfit_floor,
+        compacted_summary=run.compacted_summary,
+        compacted_up_to=run.compacted_up_to,
+    )
+    prompt_text = _json.dumps(messages)
+    prompt_tokens = estimate_tokens(prompt_text)
+    context_limit = get_context_limit(run.model, run.context_limit)
+    usage_pct = round((prompt_tokens / context_limit) * 100, 1) if context_limit > 0 else 0.0
+    threshold_tokens = int(context_limit * run.compact_threshold_pct / 100)
+
+    return {
+        "prompt_tokens": prompt_tokens,
+        "context_limit": context_limit,
+        "usage_pct": usage_pct,
+        "threshold_pct": run.compact_threshold_pct,
+        "threshold_tokens": threshold_tokens,
+        "compacted": run.compacted_up_to is not None,
+        "compacted_up_to": run.compacted_up_to,
+        "memory_count": len(memory_records),
     }
 
 

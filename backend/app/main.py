@@ -2,14 +2,16 @@
 
 import hmac
 import logging
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api import notes, projects, providers, runs, sse
+from app.api import channels, notes, projects, providers, runs, sse
 from app.config import settings
 from app.services.recovery import recover_stuck_runs
 
@@ -54,8 +56,17 @@ async def lifespan(app: FastAPI):
         logger.info("API key authentication is ENABLED")
     else:
         logger.info("API key authentication is DISABLED (no AR_API_KEY set)")
+
+    # Start notification service and channel command receivers
+    from app.services import notification_service, channel_manager
+    await notification_service.start()
+    await channel_manager.start_all()
+
     yield
-    # Shutdown — nothing to clean up
+
+    # Shutdown
+    await notification_service.stop()
+    await channel_manager.stop_all()
 
 
 app = FastAPI(
@@ -91,6 +102,7 @@ app.include_router(runs.router, prefix="/api")
 app.include_router(providers.router, prefix="/api")
 app.include_router(notes.router, prefix="/api")
 app.include_router(sse.router, prefix="/api")
+app.include_router(channels.router, prefix="/api")
 
 
 @app.get("/api/health")
@@ -108,3 +120,24 @@ async def auth_check(request: Request):
     token = auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer ") else ""
     valid = bool(token) and hmac.compare_digest(token, settings.api_key)
     return {"auth_required": True, "authenticated": valid}
+
+
+# ── Serve bundled / built frontend (must be mounted last) ─
+# When running as a PyInstaller bundle the frontend is in frontend_dist/ inside _MEIPASS.
+# During development it is the Vite build output at frontend/dist/ (if it exists).
+def _find_frontend_dist() -> Path | None:
+    if getattr(sys, "frozen", False):
+        candidate = Path(sys._MEIPASS) / "frontend_dist"  # type: ignore[attr-defined]
+    else:
+        candidate = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+    return candidate if candidate.exists() else None
+
+
+_frontend_dist = _find_frontend_dist()
+if _frontend_dist is not None:
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="frontend")
+    logger.info("Serving frontend from %s", _frontend_dist)
+else:
+    logger.debug("No frontend/dist found — skipping static file mount (dev mode or not yet built)")

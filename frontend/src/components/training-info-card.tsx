@@ -51,25 +51,7 @@ export function TrainingInfoCard({ iteration, bestValBpb, model }: TrainingInfoC
     : null;
 
   return (
-    <div className="glass rounded-xl overflow-hidden glow-violet mb-4">
-      {/* Top bar with pulse */}
-      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border/15">
-        <div className="relative">
-          <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
-            <Flame className="h-4 w-4 text-violet-400" />
-          </div>
-          <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-violet-400 animate-pulse-dot" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground/90">Training in Progress</p>
-          <p className="text-[11px] text-muted-foreground/60 font-mono truncate">{model}</p>
-        </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
-          <div className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse-dot" />
-          <span className="text-[10px] font-medium text-violet-400 uppercase tracking-wider">Running</span>
-        </div>
-      </div>
-
+    <div className="rounded-xl overflow-hidden">
       {/* Stats grid */}
       <div className="grid grid-cols-3 gap-px bg-border/10">
         <StatCell

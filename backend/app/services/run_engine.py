@@ -3,10 +3,12 @@
 import asyncio
 import json
 import logging
+import math
 import os
 import re
 import shutil
 import signal
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -389,20 +391,57 @@ async def wake_agent(run_id: str) -> None:
             set_agent_snapshot(run_id, {"phase": "thinking", "iteration": run.iteration, "text": ""})
             await publish(run_id, "agent_streaming_start", {"iteration": run.iteration, "phase": "thinking"})
 
-            async for chunk in provider.stream_response(
-                model=run.model, messages=messages, credentials=credentials
-            ):
-                # Check cancellation during streaming
-                if run_id in _canceled_runs:
-                    clear_agent_snapshot(run_id)
-                    return
-                full_response += chunk
-                # Detect phase transition: thinking → coding
-                if agent_phase == "thinking" and "```" in full_response:
-                    agent_phase = "coding"
-                    await publish(run_id, "agent_phase_change", {"phase": "coding"})
-                set_agent_snapshot(run_id, {"phase": agent_phase, "iteration": run.iteration, "text": full_response})
-                await publish(run_id, "agent_chunk", {"text": chunk})
+            async def _stream_agent():
+                nonlocal full_response, agent_phase
+                stream_iter = provider.stream_response(
+                    model=run.model, messages=messages, credentials=credentials
+                ).__aiter__()
+                while True:
+                    # Check cancellation during streaming
+                    if run_id in _canceled_runs:
+                        clear_agent_snapshot(run_id)
+                        return
+                    try:
+                        chunk = await asyncio.wait_for(
+                            stream_iter.__anext__(),
+                            timeout=settings.default_agent_inactivity_timeout,
+                        )
+                    except StopAsyncIteration:
+                        break
+                    except asyncio.TimeoutError:
+                        raise  # propagate so the outer handler catches it
+                    full_response += chunk
+                    # Detect phase transition: thinking → coding
+                    if agent_phase == "thinking" and "```" in full_response:
+                        agent_phase = "coding"
+                        await publish(run_id, "agent_phase_change", {"phase": "coding"})
+                    set_agent_snapshot(run_id, {"phase": agent_phase, "iteration": run.iteration, "text": full_response})
+                    await publish(run_id, "agent_chunk", {"text": chunk})
+
+            try:
+                await _stream_agent()
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "Agent stream stalled (no output for %ds) for run %s iter %d — will retry",
+                    settings.default_agent_inactivity_timeout, run_id, run.iteration,
+                )
+                clear_agent_snapshot(run_id)
+
+                agent_step.status = "failed"
+                agent_step.response = full_response
+                session.add(agent_step)
+                await session.commit()
+
+                await transition_state(session, run, RunState.AWAITING_NEXT_ACTION)
+                await publish(run_id, "agent_timeout", {
+                    "timeout_seconds": settings.default_agent_inactivity_timeout,
+                    "iteration": run.iteration,
+                })
+
+                if await _should_auto_continue(session, run):
+                    await publish(run_id, "auto_continue", {})
+                    asyncio.create_task(continue_loop(run_id))
+                return
 
             clear_agent_snapshot(run_id)
             await publish(run_id, "agent_streaming_end", {})
@@ -596,18 +635,102 @@ async def _run_training(run_id: str, agent_step_id: str) -> None:
             stdout_lines = []
             stderr_lines = []
 
+            # Watchdog: detect when training reaches 100% but process doesn't exit
+            _completion_detected_at: dict[str, float | None] = {"t": None}
+            _COMPLETION_GRACE_SECONDS = 30
+            _completion_re = re.compile(r"\(100\.0%\).*remaining:\s*0s")
+
             async def stream_output(stream, lines_list, stream_name):
-                async for line in stream:
-                    decoded = line.decode("utf-8", errors="replace")
-                    lines_list.append(decoded)
-                    await publish(run_id, f"training_{stream_name}", {"line": decoded.rstrip()})
+                # Read raw chunks instead of readline to avoid
+                # LimitOverrunError when training scripts use \r
+                # with end="" (no newline) for in-place progress updates.
+                buf = ""
+                while True:
+                    chunk = await stream.read(8192)
+                    if not chunk:
+                        # Flush remaining buffer
+                        if buf:
+                            lines_list.append(buf)
+                            await publish(run_id, f"training_{stream_name}", {"line": buf.rstrip()})
+                        break
+                    text = chunk.decode("utf-8", errors="replace")
+                    buf += text
+                    # Split on \n or \r to emit lines
+                    while "\n" in buf or "\r" in buf:
+                        # Find earliest line boundary
+                        idx_n = buf.find("\n")
+                        idx_r = buf.find("\r")
+                        if idx_n == -1:
+                            idx = idx_r
+                        elif idx_r == -1:
+                            idx = idx_n
+                        else:
+                            idx = min(idx_n, idx_r)
+                        line = buf[: idx + 1]
+                        buf = buf[idx + 1 :]
+                        lines_list.append(line)
+                        await publish(run_id, f"training_{stream_name}", {"line": line.rstrip()})
+                        # Detect training completion (100%, remaining: 0s)
+                        if stream_name == "stdout" and _completion_detected_at["t"] is None:
+                            if _completion_re.search(line):
+                                _completion_detected_at["t"] = time.monotonic()
+
+            async def completion_watchdog():
+                """Kill process if it keeps running past 100% completion."""
+                while proc.returncode is None:
+                    await asyncio.sleep(5)
+                    t = _completion_detected_at["t"]
+                    if t is not None and (time.monotonic() - t) > _COMPLETION_GRACE_SECONDS:
+                        logger.warning(
+                            "Training stuck past 100%% for >%ds in run %s — killing",
+                            _COMPLETION_GRACE_SECONDS, run_id,
+                        )
+                        proc.kill()
+                        return
 
             try:
-                await asyncio.gather(
-                    stream_output(proc.stdout, stdout_lines, "stdout"),
-                    stream_output(proc.stderr, stderr_lines, "stderr"),
+                await asyncio.wait_for(
+                    asyncio.gather(
+                        stream_output(proc.stdout, stdout_lines, "stdout"),
+                        stream_output(proc.stderr, stderr_lines, "stderr"),
+                        completion_watchdog(),
+                    ),
+                    timeout=settings.default_training_timeout_seconds,
                 )
                 await proc.wait()
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "Training timed out after %ds for run %s — killing subprocess",
+                    settings.default_training_timeout_seconds, run_id,
+                )
+                proc.kill()
+                await proc.wait()
+
+                training_step.status = "failed"
+                training_step.stderr_log = f"Training timed out after {settings.default_training_timeout_seconds}s"
+                training_step.stdout_log = "".join(stdout_lines)
+                training_step.exit_code = proc.returncode
+                session.add(training_step)
+                await session.commit()
+
+                # Revert the patch
+                git = GitService(workspace.workspace_path)
+                git.open()
+                git.reset_to(workspace.current_commit + "~1")
+                workspace.current_commit = git.get_current_sha()
+                session.add(workspace)
+                await session.commit()
+
+                await transition_state(session, run, RunState.TRAINING_FINISHED)
+                await _record_memory(session, run, training_step, improved=False)
+                await transition_state(session, run, RunState.AWAITING_NEXT_ACTION)
+                clear_training_snapshot(run_id)
+                await publish(run_id, "training_timeout", {"timeout_seconds": settings.default_training_timeout_seconds})
+
+                if await _should_auto_continue(session, run):
+                    await publish(run_id, "auto_continue", {})
+                    asyncio.create_task(continue_loop(run_id))
+                return
             finally:
                 _active_processes.pop(run_id, None)
 
@@ -646,6 +769,36 @@ async def _run_training(run_id: str, agent_step_id: str) -> None:
 
             # Parse val_bpb from output
             val_bpb = _parse_val_bpb(stdout_text + stderr_text)
+
+            # Treat nan/inf as a training failure
+            if val_bpb is not None and math.isnan(val_bpb):
+                logger.warning("val_bpb is NaN for run %s — treating as failure", run_id)
+                training_step.val_bpb = None
+                training_step.status = "failed"
+                training_step.stderr_log = (stderr_text or "") + "\nval_bpb was NaN — treated as failure"
+                training_step.stdout_log = stdout_text
+                training_step.exit_code = exit_code
+                session.add(training_step)
+                await session.commit()
+
+                git = GitService(workspace.workspace_path)
+                git.open()
+                git.reset_to(workspace.current_commit + "~1")
+                workspace.current_commit = git.get_current_sha()
+                session.add(workspace)
+                await session.commit()
+
+                await transition_state(session, run, RunState.TRAINING_FINISHED)
+                await _record_memory(session, run, training_step, improved=False)
+                await transition_state(session, run, RunState.AWAITING_NEXT_ACTION)
+                clear_training_snapshot(run_id)
+                await publish(run_id, "training_failed", {"exit_code": exit_code, "reason": "val_bpb_nan"})
+
+                if await _should_auto_continue(session, run):
+                    await publish(run_id, "auto_continue", {})
+                    asyncio.create_task(continue_loop(run_id))
+                return
+
             training_step.val_bpb = val_bpb
             training_step.status = "completed"
 
@@ -1073,16 +1226,24 @@ async def _record_memory(
 
 
 def _parse_val_bpb(output: str) -> float | None:
-    """Extract val_bpb from training output. Looks for patterns like 'val_bpb: 1.234'."""
+    """Extract val_bpb from training output. Looks for patterns like 'val_bpb: 1.234'.
+    Returns math.nan for nan/inf values so callers can detect invalid results."""
     patterns = [
-        r"val_bpb[:\s=]+([0-9]+\.?[0-9]*)",
-        r"val bpb[:\s=]+([0-9]+\.?[0-9]*)",
-        r"validation bpb[:\s=]+([0-9]+\.?[0-9]*)",
+        r"val_bpb[:\s=]+([\w.+-]+)",
+        r"val bpb[:\s=]+([\w.+-]+)",
+        r"validation bpb[:\s=]+([\w.+-]+)",
     ]
     last_match = None
     for pattern in patterns:
         for match in re.finditer(pattern, output, re.IGNORECASE):
-            last_match = float(match.group(1))
+            raw = match.group(1).strip().lower()
+            if raw in ("nan", "inf", "-inf", "+inf"):
+                last_match = math.nan
+            else:
+                try:
+                    last_match = float(raw)
+                except ValueError:
+                    continue
     return last_match
 
 

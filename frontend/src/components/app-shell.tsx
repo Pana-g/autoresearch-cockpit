@@ -1,15 +1,15 @@
 import { Link, useLocation, useParams } from "react-router-dom";
-import { Beaker, KeyRound, FolderOpen, Menu, ChevronRight, Sun, Moon, Monitor } from "lucide-react";
+import { Beaker, KeyRound, FolderOpen, Menu, ChevronRight, Sun, Moon, Monitor, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/stores/ui-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useConnectionStore } from "@/stores/connection-store";
 import { ServerSwitcher } from "@/components/server-switcher";
-import { motion, AnimatePresence } from "motion/react";
-
+import { motion, AnimatePresence } from "motion/react";import { version } from "../../package.json";
 const NAV = [
   { to: "/projects", label: "Projects", icon: FolderOpen },
   { to: "/settings/providers", label: "Providers", icon: KeyRound },
+  { to: "/settings/channels", label: "Channels", icon: Bell },
 ];
 
 function Breadcrumbs() {
@@ -23,6 +23,7 @@ function Breadcrumbs() {
     if (segments[2] === "settings") crumbs.push({ label: "Settings", to: location.pathname });
   } else if (segments[0] === "settings") {
     if (segments[1] === "providers") crumbs.push({ label: "Providers", to: "/settings/providers" });
+    else if (segments[1] === "channels") crumbs.push({ label: "Channels", to: "/settings/channels" });
     else if (segments[1] === "servers") crumbs.push({ label: "Servers", to: "/settings/servers" });
     else crumbs.push({ label: "Settings", to: "/settings/providers" });
   }
@@ -106,7 +107,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="sep-gradient mx-4" />
 
             <div className="px-4 py-3 flex items-center justify-between">
-              <p className="text-[10px] text-muted-foreground/60 font-mono tracking-wide">v0.1.0</p>
+              <p className="text-[10px] text-muted-foreground/60 font-mono tracking-wide">v{version}</p>
               <div className="flex gap-1">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/60 animate-pulse-dot" />
               </div>

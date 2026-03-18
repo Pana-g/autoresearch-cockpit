@@ -25,7 +25,7 @@ export function PatchReview({ step, originalCode, onApprove, onReject, onEdit, t
   const patchedCode = step.patch ?? "";
 
   return (
-    <div className="glass rounded-xl overflow-hidden glow-amber">
+    <div className="overflow-hidden">
       {/* Header */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center justify-between">

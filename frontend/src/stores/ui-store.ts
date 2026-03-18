@@ -61,7 +61,11 @@ export const useUIStore = create<UIState>((set) => ({
         const lines = _trainingBuffer;
         _trainingBuffer = [];
         _trainingRaf = null;
-        set((s) => ({ trainingLog: [...s.trainingLog, ...lines] }));
+        set((s) => {
+          const merged = [...s.trainingLog, ...lines];
+          // Cap at 1000 lines to prevent unbounded memory growth
+          return { trainingLog: merged.length > 1000 ? merged.slice(-1000) : merged };
+        });
       });
     }
   },

@@ -7,8 +7,6 @@ import type { SSEMessage } from "@/lib/types";
 
 export function useRunSSE(projectId: string, runId: string) {
   const qc = useQueryClient();
-  const { appendAgentStream, clearAgentStream, setAgentPhase, appendTrainingLog, clearTrainingLog, setTrainingStarted, clearTrainingStarted } =
-    useUIStore();
   const esRef = useRef<EventSource | null>(null);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryDelay = useRef(1000);
@@ -16,13 +14,17 @@ export function useRunSSE(projectId: string, runId: string) {
   useEffect(() => {
     if (!runId) return;
 
+    // Access store actions via getState() to keep a stable dependency array
+    // and avoid SSE reconnection storms on every re-render.
+    const ui = () => useUIStore.getState();
+
     function connect() {
       const url = getSSEUrl(runId);
       const es = new EventSource(url);
       esRef.current = es;
 
       es.onopen = () => {
-        retryDelay.current = 1000; // reset on successful connection
+        retryDelay.current = 1000;
       };
 
       es.onmessage = (ev) => {
@@ -38,25 +40,24 @@ export function useRunSSE(projectId: string, runId: string) {
             qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
             break;
           case "agent_streaming_start":
-            clearAgentStream();
-            setAgentPhase((msg.data?.phase as "thinking" | "coding") ?? "thinking");
+            ui().clearAgentStream();
+            ui().setAgentPhase((msg.data?.phase as "thinking" | "coding") ?? "thinking");
             break;
           case "agent_chunk":
-            appendAgentStream(String(msg.data?.text ?? ""));
+            ui().appendAgentStream(String(msg.data?.text ?? ""));
             break;
           case "agent_phase_change":
-            setAgentPhase((msg.data?.phase as "thinking" | "coding") ?? "coding");
+            ui().setAgentPhase((msg.data?.phase as "thinking" | "coding") ?? "coding");
             break;
           case "agent_streaming_end":
-            setAgentPhase("idle");
+            ui().setAgentPhase("idle");
             qc.invalidateQueries({ queryKey: ["agent-steps", runId] });
             break;
           case "agent_snapshot":
-            // Reconnect catch-up: backend tells us the current agent phase + accumulated text
-            setAgentPhase((msg.data?.phase as "thinking" | "coding") ?? "thinking");
+            ui().setAgentPhase((msg.data?.phase as "thinking" | "coding") ?? "thinking");
             if (typeof msg.data?.text === "string" && msg.data.text) {
-                clearAgentStream();
-                appendAgentStream(msg.data.text);
+                ui().clearAgentStream();
+                ui().appendAgentStream(msg.data.text);
             }
             break;
           case "patch_ready":
@@ -71,26 +72,35 @@ export function useRunSSE(projectId: string, runId: string) {
             qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
             break;
           case "training_started":
-            setTrainingStarted(msg.data?.started_at as string | undefined);
+            ui().setTrainingStarted(msg.data?.started_at as string | undefined);
             break;
           case "training_stdout":
-            appendTrainingLog(String(msg.data?.line ?? ""));
+            ui().appendTrainingLog(String(msg.data?.line ?? ""));
             break;
           case "training_stderr":
-            appendTrainingLog(`[stderr] ${msg.data?.line ?? ""}`);
+            ui().appendTrainingLog(`[stderr] ${msg.data?.line ?? ""}`);
             break;
           case "training_completed":
-            clearTrainingLog();
-            clearTrainingStarted();
+            ui().clearTrainingLog();
+            ui().clearTrainingStarted();
             qc.invalidateQueries({ queryKey: ["training-steps", runId] });
+            qc.invalidateQueries({ queryKey: ["chart-data", runId] });
             qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
             qc.invalidateQueries({ queryKey: ["usage", runId] });
             qc.invalidateQueries({ queryKey: ["usage-summary", runId] });
             break;
           case "training_failed":
           case "training_timeout":
-            clearTrainingStarted();
+            ui().clearTrainingLog();
+            ui().clearTrainingStarted();
             qc.invalidateQueries({ queryKey: ["training-steps", runId] });
+            qc.invalidateQueries({ queryKey: ["chart-data", runId] });
+            qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
+            break;
+          case "agent_timeout":
+            ui().clearAgentStream();
+            ui().setAgentPhase("idle");
+            qc.invalidateQueries({ queryKey: ["agent-steps", runId] });
             qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
             break;
           case "auto_approve":
@@ -135,7 +145,6 @@ export function useRunSSE(projectId: string, runId: string) {
       es.onerror = () => {
         es.close();
         esRef.current = null;
-        // Reconnect with exponential backoff (max 10s)
         retryTimer.current = setTimeout(() => {
           retryDelay.current = Math.min(retryDelay.current * 1.5, 10000);
           connect();
@@ -150,5 +159,5 @@ export function useRunSSE(projectId: string, runId: string) {
       esRef.current = null;
       if (retryTimer.current) clearTimeout(retryTimer.current);
     };
-  }, [runId, projectId, qc, appendAgentStream, clearAgentStream, setAgentPhase, appendTrainingLog, clearTrainingLog, setTrainingStarted, clearTrainingStarted]);
+  }, [runId, projectId, qc]);
 }

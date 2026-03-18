@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projects, runs, providers, credentials, usage, notes } from "@/lib/api";
-import type { RunAction } from "@/lib/types";
+import { projects, runs, providers, credentials, usage, notes, channels } from "@/lib/api";
+import type { RunAction, NotificationEventType } from "@/lib/types";
 
 /* ── Projects ─────────────────────────────────────────── */
 
@@ -142,6 +142,15 @@ export function useTrainingSteps(projectId: string, runId: string) {
       lastPage.length === PAGE_SIZE ? allPages.length * PAGE_SIZE : undefined,
     enabled: !!projectId && !!runId,
     refetchInterval: 5000,
+  });
+}
+
+export function useChartData(projectId: string, runId: string) {
+  return useQuery({
+    queryKey: ["chart-data", runId],
+    queryFn: () => runs.chartData(projectId, runId),
+    enabled: !!projectId && !!runId,
+    refetchInterval: 10000,
   });
 }
 
@@ -291,6 +300,15 @@ export function useUsageSummary(runId?: string) {
 
 /* ── Compaction ───────────────────────────────────────── */
 
+export function useContextUsage(projectId: string, runId: string) {
+  return useQuery({
+    queryKey: ["context-usage", runId],
+    queryFn: () => runs.getContextUsage(projectId, runId),
+    enabled: !!projectId && !!runId,
+    refetchInterval: 30_000,
+  });
+}
+
 export function useCompaction(projectId: string, runId: string) {
   return useQuery({
     queryKey: ["compaction", runId],
@@ -305,6 +323,7 @@ export function useApplyCompaction(projectId: string, runId: string) {
     mutationFn: () => runs.applyCompaction(projectId, runId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["compaction", runId] });
+      qc.invalidateQueries({ queryKey: ["context-usage", runId] });
       qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
     },
   });
@@ -317,6 +336,7 @@ export function useUpdateCompaction(projectId: string, runId: string) {
       runs.updateCompaction(projectId, runId, summary, compactedUpTo),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["compaction", runId] });
+      qc.invalidateQueries({ queryKey: ["context-usage", runId] });
       qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
     },
   });
@@ -328,7 +348,58 @@ export function useClearCompaction(projectId: string, runId: string) {
     mutationFn: () => runs.clearCompaction(projectId, runId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["compaction", runId] });
+      qc.invalidateQueries({ queryKey: ["context-usage", runId] });
       qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
     },
   });
+}
+
+/* ── Notification Channels ────────────────────────────── */
+
+export function useChannelTypes() {
+  return useQuery({ queryKey: ["channel-types"], queryFn: channels.types, staleTime: Infinity });
+}
+
+export function useChannels() {
+  return useQuery({ queryKey: ["channels"], queryFn: channels.list });
+}
+
+export function useCreateChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: channels.create,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["channels"] }),
+  });
+}
+
+export function useUpdateChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: {
+      id: string;
+      name?: string;
+      config?: Record<string, string>;
+      notification_events?: NotificationEventType[];
+      commands_enabled?: boolean;
+      is_active?: boolean;
+      linked_run_id?: string | null;
+    }) => channels.update(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["channels"] }),
+  });
+}
+
+export function useDeleteChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => channels.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["channels"] }),
+  });
+}
+
+export function useTestChannel() {
+  return useMutation({ mutationFn: (id: string) => channels.test(id) });
+}
+
+export function useValidateChannel() {
+  return useMutation({ mutationFn: (id: string) => channels.validate(id) });
 }

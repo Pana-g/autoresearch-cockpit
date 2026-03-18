@@ -98,25 +98,7 @@ export function AgentThinkingView({ stream, phase: phaseOverride }: { stream: st
   }, [reasoning, phase]);
 
   return (
-    <div className="glass rounded-xl overflow-hidden glow-teal">
-      {/* Header */}
-      <div className="flex items-center gap-3 p-5 pb-4">
-        <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-          <Brain className="h-4.5 w-4.5 text-cyan-400 animate-pulse-dot" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-medium">Agent is working</p>
-          <p className="text-[11px] text-muted-foreground/60 font-mono">
-            {phase === "thinking"
-              ? reasoning && !thinking ? "Internal reasoning..." : "Analyzing & reasoning..."
-              : phase === "coding"
-              ? "Generating patch..."
-              : "Patch complete"}
-          </p>
-        </div>
-        <PhaseIndicator phase={phase} />
-      </div>
-
+    <div className="overflow-hidden">
       {/* Internal reasoning section (from <think> tags) */}
       {reasoning && (
         <div className={`mx-5 mb-3 transition-all duration-300 ${phase !== "thinking" ? "max-h-64 overflow-hidden opacity-50" : ""}`}>
@@ -198,7 +180,7 @@ export function AgentThinkingView({ stream, phase: phaseOverride }: { stream: st
   );
 }
 
-function PhaseIndicator({ phase }: { phase: "thinking" | "coding" | "done" }) {
+export function PhaseIndicator({ phase }: { phase: "thinking" | "coding" | "done" }) {
   return (
     <div className="flex items-center gap-1.5">
       <div className="flex items-center gap-1">

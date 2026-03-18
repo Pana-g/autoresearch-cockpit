@@ -1,0 +1,196 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag (e.g. v0.2.0)"
+        required: true
+
+jobs:
+  # ── 1. Build frontend once, share as artifact ───────────
+  build-frontend:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install frontend dependencies
+        run: cd frontend && bun install --frozen-lockfile
+
+      - name: Build frontend
+        run: cd frontend && bun run build
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  # ── 2. Build backend binary (one job per platform) ──────
+  build-binary:
+    name: Build binary (${{ matrix.os }})
+    needs: build-frontend
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+            artifact: autoresearch-cockpit
+            archive_cmd: tar -czf
+            archive_ext: .tar.gz
+
+          - os: macos-13          # Intel runner
+            platform: macos-x64
+            artifact: autoresearch-cockpit
+            archive_cmd: tar -czf
+            archive_ext: .tar.gz
+
+          - os: macos-latest      # Apple Silicon (arm64) runner
+            platform: macos-arm64
+            artifact: autoresearch-cockpit
+            archive_cmd: tar -czf
+            archive_ext: .tar.gz
+
+          - os: windows-latest
+            platform: windows-x64
+            artifact: autoresearch-cockpit.exe
+            archive_ext: .zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh && echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install uv (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          irm https://astral.sh/uv/install.ps1 | iex
+          echo "$env:USERPROFILE\.local\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Stage frontend for bundling (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: cp -r frontend/dist backend/frontend_dist
+
+      - name: Stage frontend for bundling (Windows)
+        if: runner.os == 'Windows'
+        run: xcopy frontend\dist backend\frontend_dist\ /E /I /Q
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          uv sync --all-extras
+          uv pip install pyinstaller
+
+      - name: Build binary
+        run: |
+          cd backend
+          uv run pyinstaller autoresearch-cockpit.spec --noconfirm --clean
+
+      - name: Package release (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cp .env.example backend/dist/.env.example 2>/dev/null || true
+          tar -czf autoresearch-cockpit-${{ matrix.platform }}.tar.gz \
+            -C backend/dist autoresearch-cockpit \
+            $([ -f backend/dist/.env.example ] && echo ".env.example" || echo "")
+
+      - name: Package release (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          if (Test-Path .env.example) { Copy-Item .env.example backend\dist\.env.example }
+          $files = @("backend\dist\autoresearch-cockpit.exe")
+          if (Test-Path "backend\dist\.env.example") { $files += "backend\dist\.env.example" }
+          Compress-Archive -Path $files -DestinationPath "autoresearch-cockpit-${{ matrix.platform }}.zip" -Force
+
+      - name: Upload binary artifact (Linux/macOS)
+        if: runner.os != 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: autoresearch-cockpit-${{ matrix.platform }}.tar.gz
+          retention-days: 7
+
+      - name: Upload binary artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: autoresearch-cockpit-${{ matrix.platform }}.zip
+          retention-days: 7
+
+  # ── 3. Create GitHub release and attach all artifacts ───
+  create-release:
+    name: Create GitHub Release
+    needs: build-binary
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: release-artifacts/
+
+      - name: List artifacts
+        run: ls -lh release-artifacts/
+
+      - name: Determine release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract changelog entry for this release
+        id: changelog
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          # Extract the section for this version from CHANGELOG.md
+          NOTES=$(awk "/^## \[$VERSION\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          if [ -z "$NOTES" ]; then
+            NOTES="See [CHANGELOG.md](CHANGELOG.md) for details."
+          fi
+          # Write to file to handle multi-line content
+          echo "$NOTES" > release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: AutoResearch Cockpit ${{ steps.tag.outputs.tag }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.tag.outputs.tag, '-') }}
+          files: release-artifacts/*

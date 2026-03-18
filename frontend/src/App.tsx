@@ -8,6 +8,7 @@ import ProjectDetailPage from "@/pages/project-detail";
 import RunCockpitPage from "@/pages/run-cockpit";
 import ProjectSettingsPage from "@/pages/project-settings";
 import ProvidersPage from "@/pages/providers";
+import ChannelsPage from "@/pages/channels";
 import ServersPage from "@/pages/servers";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { WelcomeSetup } from "@/components/welcome-setup";
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="/projects/:projectId/settings" element={<ProjectSettingsPage />} />
               <Route path="/projects/:projectId/runs/:runId" element={<RunCockpitPage />} />
               <Route path="/settings/providers" element={<ProvidersPage />} />
+              <Route path="/settings/channels" element={<ChannelsPage />} />
               <Route path="/settings/servers" element={<ServersPage />} />
             </Routes>
             </ErrorBoundary>
