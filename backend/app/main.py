@@ -53,11 +53,20 @@ async def lifespan(app: FastAPI):
     await notification_service.stop()
 
 
+def _get_base_dir() -> Path:
+    """Return the base directory for alembic config and scripts."""
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    return Path(__file__).resolve().parent.parent
+
+
 def _stamp_alembic_head() -> None:
     from alembic.config import Config
     from alembic import command
 
-    alembic_cfg = Config(str(Path(__file__).resolve().parent.parent / "alembic.ini"))
+    base = _get_base_dir()
+    alembic_cfg = Config(str(base / "alembic.ini"))
+    alembic_cfg.set_main_option("script_location", str(base / "alembic"))
     alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url_sync)
     command.stamp(alembic_cfg, "head")
 
@@ -66,7 +75,9 @@ def _run_alembic_upgrade() -> None:
     from alembic.config import Config
     from alembic import command
 
-    alembic_cfg = Config(str(Path(__file__).resolve().parent.parent / "alembic.ini"))
+    base = _get_base_dir()
+    alembic_cfg = Config(str(base / "alembic.ini"))
+    alembic_cfg.set_main_option("script_location", str(base / "alembic"))
     alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url_sync)
     command.upgrade(alembic_cfg, "head")
 

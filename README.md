@@ -92,6 +92,11 @@ chmod +x autoresearch-cockpit-*
 autoresearch-cockpit-windows-x64.exe
 ```
 
+> **macOS users:** If you see *"Apple could not verify…"*, remove the quarantine flag first:
+> ```sh
+> xattr -d com.apple.quarantine autoresearch-cockpit-macos-arm64
+> ```
+
 Open **http://localhost:8000** — the frontend and backend are both served from the single binary. A local SQLite database and encryption key are created automatically on first run.
 
 ---

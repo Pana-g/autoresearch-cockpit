@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-03-30
+
+### Fixed
+
+- **Standalone binary crash** — Fixed `alembic` path resolution in frozen builds (macOS/Linux) by using absolute bundle paths for migrations.
+- **Provider update logic** — Credentials no longer overwrite existing values with empty strings; only provided fields are updated.
+- **Provider navigation** — Fixed broken "Manage Providers" link after run creation redirecting to 404.
+- **Validation feedback** — Connection validation errors (e.g., "invalid api key") are now correctly displayed as warnings instead of generic failures.
+- **macOS Gatekeeper** — Added documentation for resolving "Apple could not verify" malware warnings using `xattr`.
+
+### Added
+
+- **Credential hints** — Provider list now shows partially masked API keys (e.g., `sk-proj...a1b2`) to help identify active credentials.
+- **Proxy visibility** — Active Base URLs/Proxies are now visible in the provider list.
+
 ## [0.5.1] - 2026-03-29
 
 ### Changed
