@@ -178,6 +178,7 @@ class CredentialResponse(BaseModel):
     provider: str
     auth_type: str
     is_active: bool
+    credential_hints: dict[str, str] = {}
     created_at: datetime
 
     model_config = {"from_attributes": True}

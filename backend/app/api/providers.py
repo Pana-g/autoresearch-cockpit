@@ -27,6 +27,45 @@ from app.services.model_cache import get_models as cached_get_models, get_cache_
 router = APIRouter(tags=["providers"])
 
 
+def _mask(value: str) -> str:
+    """Return a masked version of a secret value."""
+    if len(value) <= 8:
+        return "***"
+    return value[:3] + "***" + value[-4:]
+
+
+def _credential_hints(cred) -> dict[str, str]:
+    """Decrypt credentials and return masked hints."""
+    try:
+        data = json.loads(decrypt(cred.encrypted_data))
+    except Exception:
+        return {}
+    hints: dict[str, str] = {}
+    for key, val in data.items():
+        if not isinstance(val, str) or not val:
+            continue
+        if "url" in key:
+            hints[key] = val  # URLs are not secret
+        elif key == "mode":
+            continue  # skip internal flags
+        else:
+            hints[key] = _mask(val)
+    return hints
+
+
+def _to_response(cred) -> dict:
+    """Convert an ORM credential to a response dict with hints."""
+    return {
+        "id": cred.id,
+        "name": cred.name,
+        "provider": cred.provider,
+        "auth_type": cred.auth_type,
+        "is_active": cred.is_active,
+        "credential_hints": _credential_hints(cred),
+        "created_at": cred.created_at,
+    }
+
+
 # ── Providers ─────────────────────────────────────────────
 
 @router.get("/providers", response_model=list[ProviderInfo])
@@ -79,7 +118,7 @@ async def list_credentials(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(ProviderCredential).order_by(ProviderCredential.created_at.desc())
     )
-    return result.scalars().all()
+    return [_to_response(c) for c in result.scalars().all()]
 
 
 @router.post("/credentials", response_model=CredentialResponse, status_code=201)
@@ -101,7 +140,7 @@ async def create_credential(body: CredentialCreate, db: AsyncSession = Depends(g
         await db.rollback()
         raise HTTPException(409, f"A credential named '{body.name}' already exists")
     await db.refresh(cred)
-    return cred
+    return _to_response(cred)
 
 
 @router.patch("/credentials/{credential_id}", response_model=CredentialResponse)
@@ -122,7 +161,7 @@ async def update_credential(
     db.add(cred)
     await db.commit()
     await db.refresh(cred)
-    return cred
+    return _to_response(cred)
 
 
 @router.delete("/credentials/{credential_id}", status_code=204)

@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useCredentials, useCreateCredential, useDeleteCredential, useValidateCredential, useProviders } from "@/hooks/use-queries";
+import { useCredentials, useCreateCredential, useDeleteCredential, useUpdateCredential, useValidateCredential, useProviders } from "@/hooks/use-queries";
 import { copilotAuth, credentials as credentialsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { formatDistanceToNow } from "@/lib/format";
-import { Key, Plus, Trash2, CheckCircle, XCircle, Shield, Loader2, Fingerprint, Globe, Copy, ExternalLink, Server } from "lucide-react";
+import { Key, Plus, Trash2, CheckCircle, XCircle, Shield, Loader2, Fingerprint, Globe, Copy, ExternalLink, Server, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
@@ -108,6 +108,7 @@ export default function ProvidersPage() {
   const { data: creds } = useCredentials();
   const createCred = useCreateCredential();
   const deleteCred = useDeleteCredential();
+  const updateCred = useUpdateCredential();
   const validateCred = useValidateCredential();
 
   const [showCreate, setShowCreate] = useState(false);
@@ -121,6 +122,13 @@ export default function ProvidersPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [validationState, setValidationState] = useState<Record<string, "idle" | "loading" | "valid" | "invalid">>({});
   const [copied, setCopied] = useState(false);
+
+  // Edit state
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editApiKey, setEditApiKey] = useState("");
+  const [editProxyUrl, setEditProxyUrl] = useState("");
+  const [editProxyApiKey, setEditProxyApiKey] = useState("");
 
   const deviceAuth = useDeviceAuth();
 
@@ -205,6 +213,41 @@ export default function ProvidersPage() {
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const startEdit = (c: { id: string; name: string; auth_type: string; credential_hints: Record<string, string> }) => {
+    setEditId(c.id);
+    setEditName(c.name);
+    setEditApiKey("");
+    setEditProxyUrl(c.credential_hints?.proxy_base_url ?? "");
+    setEditProxyApiKey("");
+  };
+
+  const handleUpdate = (credId: string, authType: string) => {
+    const body: { name?: string; credentials?: Record<string, string> } = {};
+    if (editName) body.name = editName;
+
+    if (authType === "proxy") {
+      if (editProxyUrl || editProxyApiKey) {
+        const creds: Record<string, string> = { mode: "proxy" };
+        if (editProxyUrl) creds.proxy_base_url = editProxyUrl;
+        if (editProxyApiKey) creds.api_key = editProxyApiKey;
+        body.credentials = creds;
+      }
+    } else if (authType === "api_key" || authType === "none") {
+      if (editApiKey) body.credentials = { api_key: editApiKey };
+    }
+
+    updateCred.mutate(
+      { id: credId, ...body },
+      {
+        onSuccess: () => {
+          setEditId(null);
+          toast.success("Credential updated");
+        },
+        onError: (err) => toast.error(`Failed to update: ${err.message}`),
+      },
+    );
   };
 
   // Group credentials by provider
@@ -469,42 +512,106 @@ export default function ProvidersPage() {
                 )}
                 {provCreds.map((c) => {
                   const vs = validationState[c.id] ?? "idle";
+                  const isEditing = editId === c.id;
                   return (
-                    <div key={c.id} className="flex items-center gap-3 rounded-lg bg-muted/50 hover:bg-accent px-4 py-2.5 transition-colors">
-                      {c.auth_type === "oauth" ? (
-                        <Fingerprint className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      ) : c.auth_type === "proxy" ? (
-                        <Server className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      ) : (
-                        <Key className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium">{c.name}</p>
-                        <p className="text-[11px] text-muted-foreground font-mono">{c.auth_type} · {formatDistanceToNow(c.created_at)}</p>
+                    <div key={c.id} className="rounded-lg bg-muted/50 hover:bg-accent transition-colors">
+                      <div className="flex items-center gap-3 px-4 py-2.5">
+                        {c.auth_type === "oauth" ? (
+                          <Fingerprint className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        ) : c.auth_type === "proxy" ? (
+                          <Server className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        ) : (
+                          <Key className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium">{c.name}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono">{c.auth_type} · {formatDistanceToNow(c.created_at)}</p>
+                        </div>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                          c.is_active
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            : "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20"
+                        }`}>
+                          <span className={`h-1 w-1 rounded-full ${c.is_active ? "bg-emerald-400" : "bg-zinc-500"}`} />
+                          {c.is_active ? "active" : "disabled"}
+                        </span>
+                        {vs === "loading" && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                        {vs === "valid" && <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />}
+                        {vs === "invalid" && <XCircle className="h-3.5 w-3.5 text-red-400" />}
+                        <button
+                          onClick={() => handleValidate(c.id)}
+                          className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-accent transition-colors"
+                        >
+                          Test
+                        </button>
+                        <button
+                          onClick={() => isEditing ? setEditId(null) : startEdit(c)}
+                          className="text-muted-foreground hover:text-primary p-1 rounded-md hover:bg-primary/10 transition-all"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteId(c.id)}
+                          className="text-muted-foreground hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 transition-all"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                        c.is_active
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          : "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20"
-                      }`}>
-                        <span className={`h-1 w-1 rounded-full ${c.is_active ? "bg-emerald-400" : "bg-zinc-500"}`} />
-                        {c.is_active ? "active" : "disabled"}
-                      </span>
-                      {vs === "loading" && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-                      {vs === "valid" && <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />}
-                      {vs === "invalid" && <XCircle className="h-3.5 w-3.5 text-red-400" />}
-                      <button
-                        onClick={() => handleValidate(c.id)}
-                        className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-accent transition-colors"
-                      >
-                        Test
-                      </button>
-                      <button
-                        onClick={() => setDeleteId(c.id)}
-                        className="text-muted-foreground hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 transition-all"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+
+                      {/* Inline edit form */}
+                      <AnimatePresence>
+                        {isEditing && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-3 pt-1 space-y-3 border-t border-border/50">
+                              <Input
+                                placeholder="Credential name"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                className="h-8 text-xs bg-background border-border"
+                              />
+                              {c.auth_type === "proxy" ? (
+                                <>
+                                  <Input
+                                    placeholder="Proxy URL"
+                                    value={editProxyUrl}
+                                    onChange={(e) => setEditProxyUrl(e.target.value)}
+                                    className="h-8 text-xs font-mono bg-background border-border"
+                                  />
+                                  <Input
+                                    type="password"
+                                    placeholder={c.credential_hints?.api_key ? `Current: ${c.credential_hints.api_key}` : "API Key"}
+                                    value={editProxyApiKey}
+                                    onChange={(e) => setEditProxyApiKey(e.target.value)}
+                                    className="h-8 text-xs font-mono bg-background border-border"
+                                    autoComplete="off"
+                                  />
+                                </>
+                              ) : c.auth_type !== "none" && c.auth_type !== "oauth" && c.auth_type !== "device_auth" && (
+                                <Input
+                                  type="password"
+                                  placeholder={c.credential_hints?.api_key ? `Current: ${c.credential_hints.api_key}` : "API Key"}
+                                  value={editApiKey}
+                                  onChange={(e) => setEditApiKey(e.target.value)}
+                                  className="h-8 text-xs font-mono bg-background border-border"
+                                  autoComplete="off"
+                                />
+                              )}
+                              <div className="flex gap-2">
+                                <Button size="sm" className="h-7 text-xs active:scale-95 transition-transform" disabled={updateCred.isPending} onClick={() => handleUpdate(c.id, c.auth_type)}>
+                                  {updateCred.isPending ? "Saving..." : "Save"}
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setEditId(null)}>Cancel</Button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   );
                 })}

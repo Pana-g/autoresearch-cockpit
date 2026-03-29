@@ -2,8 +2,9 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProviders, useProviderModels, useCredentials, useRefreshModels } from "@/hooks/use-queries";
-import { RefreshCw } from "lucide-react";
-import { useState, useEffect } from "react";
+import { RefreshCw, KeyRound } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 
 interface Props {
   provider: string;
@@ -21,6 +22,15 @@ export function ModelSelector({ provider, model, credentialId, onProviderChange,
   const refreshModels = useRefreshModels();
   const [providerCreds, setProviderCreds] = useState<typeof credList>([]);
 
+  // Only show providers that have at least one active credential
+  const configuredProviders = useMemo(() => {
+    if (!providerList || !credList) return [];
+    const activeProviderNames = new Set(
+      credList.filter((c) => c.is_active).map((c) => c.provider),
+    );
+    return providerList.filter((p) => activeProviderNames.has(p.name));
+  }, [providerList, credList]);
+
   const credentialName = credentialId && credList
     ? credList.find((c) => c.id === credentialId)?.name
     : undefined;
@@ -31,6 +41,36 @@ export function ModelSelector({ provider, model, credentialId, onProviderChange,
     }
   }, [credList, provider]);
 
+  // No configured providers — show a message
+  if (credList && credList.length > 0 && configuredProviders.length === 0) {
+    // Credentials exist but none are active
+    return (
+      <div className="rounded-lg bg-muted/50 border border-border p-4 text-center space-y-2">
+        <KeyRound className="h-5 w-5 mx-auto text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">No active provider credentials found.</p>
+        <p className="text-xs text-muted-foreground">
+          Enable a credential on the{" "}
+          <Link to="/providers" className="text-primary hover:underline">Providers</Link>{" "}
+          page to start a run.
+        </p>
+      </div>
+    );
+  }
+
+  if (credList && configuredProviders.length === 0) {
+    return (
+      <div className="rounded-lg bg-muted/50 border border-border p-4 text-center space-y-2">
+        <KeyRound className="h-5 w-5 mx-auto text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">No providers configured yet.</p>
+        <p className="text-xs text-muted-foreground">
+          Go to the{" "}
+          <Link to="/providers" className="text-primary hover:underline">Providers</Link>{" "}
+          page to add an API key or connect a provider before creating a run.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div>
@@ -40,7 +80,7 @@ export function ModelSelector({ provider, model, credentialId, onProviderChange,
             <SelectValue placeholder="Select provider" />
           </SelectTrigger>
           <SelectContent>
-            {providerList?.map((p) => (
+            {configuredProviders.map((p) => (
               <SelectItem key={p.name} value={p.name} className="text-sm">{p.name}</SelectItem>
             ))}
           </SelectContent>

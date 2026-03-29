@@ -114,6 +114,7 @@ export interface Credential {
   provider: string;
   auth_type: string;
   is_active: boolean;
+  credential_hints: Record<string, string>;
   created_at: string;
 }
 

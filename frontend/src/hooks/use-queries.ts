@@ -280,6 +280,15 @@ export function useCreateCredential() {
   });
 }
 
+export function useUpdateCredential() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; name?: string; credentials?: Record<string, string>; is_active?: boolean }) =>
+      credentials.update(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["credentials"] }),
+  });
+}
+
 export function useDeleteCredential() {
   const qc = useQueryClient();
   return useMutation({
