@@ -1,6 +1,7 @@
 """Provider and credential management endpoints."""
 
 import json
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -23,6 +24,8 @@ from app.schemas import (
 )
 from app.services.encryption import decrypt, encrypt
 from app.services.model_cache import get_models as cached_get_models, get_cache_age
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["providers"])
 
@@ -154,7 +157,10 @@ async def update_credential(
     if body.name is not None:
         cred.name = body.name
     if body.credentials is not None:
-        cred.encrypted_data = encrypt(json.dumps(body.credentials))
+        # Merge with existing credentials so unset fields are preserved
+        existing = json.loads(decrypt(cred.encrypted_data))
+        existing.update(body.credentials)
+        cred.encrypted_data = encrypt(json.dumps(existing))
     if body.is_active is not None:
         cred.is_active = body.is_active
 
@@ -190,8 +196,12 @@ async def validate_credential(credential_id: str, db: AsyncSession = Depends(get
 
     provider = get_provider(cred.provider)
     credentials = json.loads(decrypt(cred.encrypted_data))
-    valid = await provider.validate_credentials(credentials)
-    return {"valid": valid}
+    try:
+        valid = await provider.validate_credentials(credentials)
+        return {"valid": valid}
+    except Exception as exc:
+        logger.warning("Credential %s validation error: %s", credential_id, exc)
+        return {"valid": False, "error": str(exc)}
 
 
 # ── Token Usage ───────────────────────────────────────────

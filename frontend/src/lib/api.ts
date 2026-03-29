@@ -214,7 +214,7 @@ export const credentials = {
   update: (id: string, body: { name?: string; credentials?: Record<string, string>; is_active?: boolean }) =>
     request<Credential>(`/credentials/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (id: string) => request<void>(`/credentials/${id}`, { method: "DELETE" }),
-  validate: (id: string) => request<{ valid: boolean }>(`/credentials/${id}/validate`, { method: "POST" }),
+  validate: (id: string) => request<{ valid: boolean; error?: string }>(`/credentials/${id}/validate`, { method: "POST" }),
 };
 
 /* ── Usage ────────────────────────────────────────────── */

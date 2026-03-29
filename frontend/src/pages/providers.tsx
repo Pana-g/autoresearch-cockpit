@@ -177,19 +177,20 @@ export default function ProvidersPage() {
           deviceAuth.reset();
 
           // Auto-validate the new credential
-          toast.info("Credential saved — validating connection…");
           setValidationState((s) => ({ ...s, [cred.id]: "loading" }));
           try {
             const result = await credentialsApi.validate(cred.id);
             setValidationState((s) => ({ ...s, [cred.id]: result.valid ? "valid" : "invalid" }));
             if (result.valid) {
-              toast.success(`${cred.name} connected successfully`);
+              toast.success(`${cred.name} saved & connected successfully`);
             } else {
-              toast.error(`${cred.name} saved but connection failed — check credentials`);
+              toast.warning(result.error
+                ? `${cred.name} saved — validation failed: ${result.error}`
+                : `${cred.name} saved — but could not verify the connection. Check that your credentials are correct and the provider is reachable.`);
             }
           } catch {
             setValidationState((s) => ({ ...s, [cred.id]: "invalid" }));
-            toast.error(`${cred.name} saved but validation failed`);
+            toast.warning(`${cred.name} saved — but validation could not be completed`);
           }
         },
         onError: (err) => {
@@ -204,8 +205,14 @@ export default function ProvidersPage() {
     try {
       const result = await validateCred.mutateAsync(id);
       setValidationState((s) => ({ ...s, [id]: result.valid ? "valid" : "invalid" }));
+      if (result.valid) {
+        toast.success("Connection verified");
+      } else {
+        toast.warning(result.error ? `Validation failed: ${result.error}` : "Validation failed — check credentials and provider availability");
+      }
     } catch {
       setValidationState((s) => ({ ...s, [id]: "invalid" }));
+      toast.error("Could not reach the server to validate");
     }
   };
 
