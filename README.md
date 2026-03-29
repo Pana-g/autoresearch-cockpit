@@ -5,69 +5,75 @@
 </p>
 
 <p align="center">
+  <strong>A web dashboard for <a href="https://github.com/karpathy/autoresearch">karpathy/autoresearch</a> — see every iteration, review patches, track loss, and control runs from the browser.</strong>
+</p>
+
+<p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"/></a>
-  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.3.0-informational" alt="Version"/></a>
+  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.5.0-informational" alt="Version"/></a>
   <a href="https://github.com/Pana-g/autoresearch-cockpit/issues"><img src="https://img.shields.io/github/issues/Pana-g/autoresearch-cockpit" alt="Open Issues"/></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions Welcome"/></a>
   <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-ff69b4" alt="Code of Conduct"/></a>
 </p>
 
-Control plane for [karpathy/autoresearch](https://github.com/karpathy/autoresearch) — a web dashboard that wraps the autoresearch training loop with visibility, control, and tooling that the CLI alone doesn't provide.
+---
 
-## What the Cockpit Adds
+## Why?
 
-Autoresearch runs iterative AI-driven training experiments from the command line. The Cockpit gives you a full web UI on top of that:
+Autoresearch runs iterative AI-driven training experiments from the command line. That works — but after a few hundred iterations you'll want to:
 
-- **Live dashboard** — watch every iteration in real time: agent reasoning, training logs, progress, and token costs stream via SSE into a single view
-- **Patch review gate** — inspect AI-generated code patches in a side-by-side syntax-highlighted diff and approve or reject them before training starts
-- **Iteration diff compare** — compare the agent's patches between any two iterations to see how its approach evolved
-- **Training loss chart** — interactive `val_bpb` chart with zoom/brush, colour-coded dots (green = improvement, red = regression), and an expandable panel
-- **Multi-provider LLM support** — swap between OpenAI, Anthropic, Google Gemini, OpenRouter, Ollama, and GitHub Copilot from the UI with dynamic model listing
-- **Notification channels** — get alerts on Discord, Telegram, Slack, or a custom webhook with per-event toggles
-- **Model chat** — talk to the configured LLM directly from the run cockpit without leaving the dashboard
-- **Multi-project & multi-server** — manage several autoresearch projects and connect to multiple backend instances from one frontend
-- **Runtime settings** — change timeouts, CORS, and other parameters from the web UI — no file edits or restarts
-- **Standalone binary** — single executable for Linux, macOS, and Windows with the React frontend embedded; no Python or Node.js required to run
+- **See what's happening** without tailing logs
+- **Review the AI's patches** before they hit training
+- **Compare iterations** to understand what the model is trying
+- **Track loss visually** instead of grepping for `val_bpb`
+- **Get notified** when something improves (or breaks)
+- **Control the loop** — pause, stop, approve, reject — without killing processes
+
+The Cockpit gives you all of this in a single browser tab.
+
+---
 
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/Screenshot_20260318_213154.png" alt="Screenshot 1" width="49%" />
-  <img src="screenshots/Screenshot_20260316_195148.png" alt="Screenshot 2" width="49%" />
+  <img src="screenshots/Screenshot_20260316_195350.png" alt="Run cockpit — agent reasoning and patch code" width="49%" />
+  <img src="screenshots/Screenshot_20260318_213154.png" alt="Training progress — live score chart and training output" width="49%" />
 </p>
 <p align="center">
-  <img src="screenshots/Screenshot_20260316_195328.png" alt="Screenshot 3" width="49%" />
-  <img src="screenshots/Screenshot_20260316_195350.png" alt="Screenshot 4" width="49%" />
+  <img src="screenshots/Screenshot_20260316_195328.png" alt="Project overview — runs list with status and best scores" width="49%" />
+  <img src="screenshots/Screenshot_20260316_195148.png" alt="Provider credentials — multi-provider LLM management" width="49%" />
 </p>
 
 ---
 
-## Table of Contents
+## Key Features
 
-- [What the Cockpit Adds](#what-the-cockpit-adds)
-- [Quick Start](#quick-start)
-- [Setup](#setup)
-  - [macOS / Linux](#macos--linux)
-  - [Windows](#windows)
-- [Running](#running)
-  - [macOS / Linux](#running-macos--linux)
-  - [Windows](#running-windows)
-- [Docker (Full Stack)](#docker-full-stack)
-- [Manual Setup (No Scripts)](#manual-setup-no-scripts)
-- [Environment Variables](#environment-variables)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [Changelog](#changelog)
-- [Security](#security)
-- [License](#license)
+| Feature | What it does |
+|---------|-------------|
+| **Live run cockpit** | Real-time SSE streaming of agent thinking, code patches, training logs, and iteration progress — all in one view |
+| **Score progression chart** | Interactive `val_bpb` chart with zoom, brush selection, colour-coded dots (green = improvement, red = regression) |
+| **Patch review gate** | Side-by-side syntax-highlighted diff — approve or reject AI-generated patches before training starts |
+| **Iteration diff compare** | Compare patches between any two iterations to trace how the AI's strategy evolved |
+| **Multi-provider LLM** | OpenAI, Anthropic, Google Gemini, OpenRouter, Ollama, GitHub Copilot — switch models from the UI with dynamic model listing |
+| **Automation controls** | Auto-approve, auto-continue, max iterations, overfit floor/margin, consecutive failure limit — all configurable per run |
+| **Context compaction** | Automatic conversation compaction to manage token budgets across hundreds of iterations |
+| **Notifications** | Discord, Telegram, Slack, or webhook alerts with per-event toggles |
+| **Model chat** | Talk to the configured LLM directly from the run cockpit |
+| **Multi-project** | Manage multiple autoresearch projects and connect to multiple backend instances |
+| **Runtime settings** | Change timeouts, CORS, and parameters from the web UI — no restarts needed |
+| **Zero config** | SQLite database auto-created on first run; no Docker, no Postgres, no manual setup |
 
 ---
 
-## Quick Start
+## Getting Started
 
-### Download a Release (no build required)
+There are three ways to run the Cockpit, from easiest to most flexible:
 
-Grab the latest pre-built binary for your platform from the [Releases page](https://github.com/Pana-g/autoresearch-cockpit/releases):
+### Option A: Download a Binary (Recommended)
+
+The fastest way. No Python, Node, or database setup required.
+
+**1.** Download the latest binary for your platform from [Releases](https://github.com/Pana-g/autoresearch-cockpit/releases):
 
 | Platform | File |
 |----------|------|
@@ -75,26 +81,37 @@ Grab the latest pre-built binary for your platform from the [Releases page](http
 | Linux (x64)           | `autoresearch-cockpit-linux-x64`   |
 | Windows (x64)         | `autoresearch-cockpit-windows-x64.exe` |
 
-Each release includes the standalone executable and an `.env.example` file. Download them, create a `.env` (see below), and run the binary — no Python, Node, or database setup required.
+**2.** Create a `.env` file next to the binary (or copy the included `.env.example`):
 
-The app uses a local SQLite database by default (auto-created on first run). For production or multi-server setups, you can optionally switch to PostgreSQL via the `AR_DATABASE_URL` environment variable.
+```env
+AR_ENCRYPTION_KEY=<your-fernet-key>
+```
 
-### Build from Source
+Generate a key:
+```sh
+python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+**3.** Run it:
 
 ```sh
-git clone https://github.com/Pana-g/autoresearch-cockpit.git
-cd autoresearch-cockpit
-./setup.sh   # First time — install everything
-./run.sh     # Start all services
+# macOS / Linux
+chmod +x autoresearch-cockpit-*
+./autoresearch-cockpit-macos-arm64
+
+# Windows
+autoresearch-cockpit-windows-x64.exe
 ```
+
+Open **http://localhost:8000** — the frontend and backend are both served from the single binary. A local SQLite database is created automatically.
 
 ---
 
-## Setup
+### Option B: Run from Source (Quick Scripts)
 
-### macOS / Linux
+Best for development or if you want to modify the code.
 
-**Prerequisites** — the setup script will check for these and guide you:
+**Prerequisites:**
 
 | Tool | macOS | Linux (Debian/Ubuntu) |
 |------|-------|-----------------------|
@@ -102,103 +119,120 @@ cd autoresearch-cockpit
 | [Bun](https://bun.sh/) | `curl -fsSL https://bun.sh/install \| bash` | same |
 | [uv](https://docs.astral.sh/uv/) | auto-installed by `setup.sh` | same |
 
-Then run:
-
 ```sh
-chmod +x setup.sh run.sh
+git clone https://github.com/Pana-g/autoresearch-cockpit.git
+cd autoresearch-cockpit
+
+# First time — installs dependencies & generates encryption key
 ./setup.sh
+
+# Start backend + frontend
+./run.sh
 ```
 
-`setup.sh` will:
-1. Verify all prerequisites are installed
-2. Install `uv` if missing
-3. Install backend Python dependencies (`uv sync`)
-4. Generate an encryption key and save to `backend/.env`
-5. Install frontend dependencies (`bun install`)
-
-### Windows
-
-**Prerequisites:**
+<details>
+<summary><strong>Windows</strong></summary>
 
 | Tool | Install |
 |------|---------|
 | Python 3.12+ | [python.org/downloads](https://www.python.org/downloads/) |
 | [Bun](https://bun.sh/) | `powershell -c "irm bun.sh/install.ps1 \| iex"` |
-
 | [uv](https://docs.astral.sh/uv/) | auto-installed by `setup.bat` |
-
-Then run:
 
 ```cmd
 setup.bat
+run.bat
 ```
 
-`setup.bat` performs the same steps as `setup.sh` adapted for Windows.
+</details>
+
+| Service   | URL                        |
+|-----------|----------------------------|
+| Frontend  | http://localhost:5173       |
+| Backend   | http://localhost:8000       |
+| API Docs  | http://localhost:8000/docs  |
+
+You can also start services individually:
+```sh
+./run.sh backend    # backend only
+./run.sh frontend   # frontend only
+```
 
 ---
 
-## Running
+### Option C: Manual Setup
 
-### Running (macOS / Linux)
+If you prefer full control without the setup/run scripts.
 
 ```sh
-# Start everything (backend + frontend)
-./run.sh
+# Backend
+cd backend
+uv sync
+cat > .env << 'EOF'
+AR_ENCRYPTION_KEY=<generate-a-fernet-key>
+EOF
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Or start services individually in separate terminals:
-./run.sh backend
-./run.sh frontend
+# Frontend (separate terminal)
+cd frontend
+bun install
+bun run dev
 ```
 
-Press `Ctrl+C` to stop all services.
-
-### Running (Windows)
-
-```cmd
-:: Start everything (opens separate windows for backend and frontend)
-run.bat
-
-:: Or start services individually:
-run.bat backend
-run.bat frontend
+Generate a Fernet key:
+```sh
+python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
-### Services
+---
 
-| Service   | URL                        | Notes            |
-|-----------|----------------------------|------------------|
-| Frontend  | http://localhost:5173       | Vite dev server  |
-| Backend   | http://localhost:8000       | FastAPI          |
-| API Docs  | http://localhost:8000/docs  | Swagger UI       |
+## How It Works
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Your machine                                                │
+│                                                              │
+│  autoresearch (CLI)        AutoResearch Cockpit              │
+│  ┌─────────────────┐      ┌─────────────────────────────┐   │
+│  │ train.py loop    │      │ FastAPI backend (port 8000)  │   │
+│  │  - agent call    │◄────►│  - orchestrates the loop     │   │
+│  │  - patch code    │      │  - streams events via SSE    │   │
+│  │  - train model   │      │  - stores state in SQLite    │   │
+│  │  - evaluate      │      │                              │   │
+│  └─────────────────┘      └──────────┬──────────────────┘   │
+│                                       │                      │
+│                            ┌──────────▼──────────────────┐   │
+│                            │ React frontend (port 5173)   │   │
+│                            │  - live dashboard            │   │
+│                            │  - patch review              │   │
+│                            │  - loss charts               │   │
+│                            │  - run controls              │   │
+│                            └─────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+The Cockpit backend wraps the autoresearch training loop. It calls the same agent → patch → train → evaluate cycle, but adds:
+
+1. **Visibility** — every step streams to the browser in real time via SSE
+2. **Control** — approve/reject patches, stop/resume runs, set iteration limits
+3. **History** — every iteration's score, patch, and agent reasoning is stored and queryable
+4. **Intelligence** — automatic context compaction, overfit detection, and failure thresholds
 
 ---
 
 ## Docker (Full Stack)
 
-Run the entire stack in Docker without installing Python, Bun, or uv locally. You only need **Docker** and **Docker Compose**.
-
-### 1. Create `backend/.env`
+For containerized deployments. Requires **Docker** and **Docker Compose**.
 
 ```sh
-# Generate an encryption key (requires Python, or use any Fernet key generator)
-python3 -c "from cryptography.fernet import Fernet; print('AR_ENCRYPTION_KEY=' + Fernet.generate_key().decode())" > backend/.env
-```
+# Create backend/.env (see above for key generation)
+echo "AR_ENCRYPTION_KEY=$(python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" > backend/.env
 
-Or create `backend/.env` manually:
-
-```env
-AR_ENCRYPTION_KEY=<your-fernet-key>
-```
-
-### 2. Build and start
-
-```sh
+# Build and start everything
 docker compose --profile full up --build -d
 ```
 
-This starts PostgreSQL, runs the backend (with migrations), and serves the frontend — all in containers.
-
-### 3. Access
+This starts PostgreSQL + backend + frontend in containers.
 
 | Service  | URL                       |
 |----------|---------------------------|
@@ -206,110 +240,70 @@ This starts PostgreSQL, runs the backend (with migrations), and serves the front
 | Backend  | http://localhost:8000      |
 | API Docs | http://localhost:8000/docs |
 
-### 4. Stop
-
 ```sh
+# Stop
 docker compose --profile full down
-```
 
-To also remove the database volume:
-
-```sh
+# Stop + wipe database
 docker compose --profile full down -v
 ```
 
-> **Note**: When running fully in Docker, the backend container needs access to autoresearch workspace directories. The `workspaces` volume is mounted at `/root/.autoresearch/workspaces` inside the container.
+> **Note**: The backend container needs access to autoresearch workspace directories. The `workspaces` volume is mounted at `/root/.autoresearch/workspaces` inside the container.
 
 ---
 
 ## Connecting to a Backend
 
-The frontend can connect to any running AutoResearch Cockpit backend — local or remote.
+On first launch, a **Welcome Setup** wizard prompts for the backend URL (e.g. `http://localhost:8000`). Click **Test** → **Connect**.
 
-When you open the frontend for the first time, a **Welcome Setup** wizard asks for the backend URL (e.g. `http://localhost:8000`). Click **Test** to verify the connection, then **Connect**.
-
-You can manage server connections at any time from **Settings → Servers** or the sidebar server switcher.
+Manage connections at any time from **Settings → Servers** or the sidebar server switcher. You can connect one frontend to multiple backend instances.
 
 ---
 
-## Manual Setup (No Scripts)
+## Configuration
 
-If you prefer to set things up yourself without the setup/run scripts.
-
-### 1. Backend
-
-```sh
-cd backend
-
-# Install dependencies
-uv sync
-
-# For PostgreSQL support:
-# uv sync --extra postgres
-
-# Create .env with required secrets
-cat > .env << 'EOF'
-AR_ENCRYPTION_KEY=<generate-a-fernet-key>
-EOF
-
-# Generate a Fernet key:
-python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-
-# Start the server (SQLite DB auto-created on first run)
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 2. Frontend
-
-```sh
-cd frontend
-bun install
-bun run dev
-```
-
----
-
-## Environment Variables
+### Environment Variables
 
 Set in `backend/.env` (auto-generated by the setup scripts):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `AR_ENCRYPTION_KEY` | — (required) | Fernet key for encrypting API credentials |
-| `AR_DATABASE_URL` | `sqlite+aiosqlite:///data/autoresearch.db` | Database connection string (SQLite or PostgreSQL) |
-| `AR_DEFAULT_TRAINING_TIMEOUT_SECONDS` | `1800` | Training subprocess timeout (seconds) |
-| `AR_DEFAULT_AGENT_INACTIVITY_TIMEOUT` | `300` | Agent inactivity timeout (seconds) |
+| `AR_ENCRYPTION_KEY` | — (required) | Fernet key for encrypting API credentials at rest |
+| `AR_DATABASE_URL` | `sqlite+aiosqlite:///data/autoresearch.db` | Database connection string |
+| `AR_DEFAULT_TRAINING_TIMEOUT_SECONDS` | `1800` | Training subprocess timeout (30 min) |
+| `AR_DEFAULT_AGENT_INACTIVITY_TIMEOUT` | `300` | Agent inactivity timeout (5 min) |
 | `AR_CORS_ORIGINS` | `["*"]` | Allowed CORS origins |
 
-> **PostgreSQL**: To use PostgreSQL instead of SQLite, set `AR_DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/dbname`. Install the PostgreSQL extras: `uv sync --extra postgres`.
+All timeout and CORS settings can also be changed at runtime from the **Settings** page in the web UI.
 
-All timeout and CORS settings can also be changed at runtime via the **Settings** page in the web UI.
+### PostgreSQL (optional)
+
+The app uses SQLite by default. To use PostgreSQL instead:
+
+```sh
+# Install the extra dependency
+cd backend && uv sync --extra postgres
+
+# Set the connection string in backend/.env
+AR_DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/dbname
+```
 
 ---
 
 ## Project Structure
 
 ```
-├── setup.sh / setup.bat       # One-time setup (macOS+Linux / Windows)
+├── setup.sh / setup.bat       # One-time setup
 ├── run.sh / run.bat           # Start all services
-├── docker-compose.yml         # Postgres (default) + full stack (--profile full)
+├── docker-compose.yml         # Full-stack Docker deployment
 ├── .env.example               # Template environment file
 ├── scripts/
-│   ├── build.sh               # Local build script (macOS/Linux)
-│   └── build.bat              # Local build script (Windows)
-├── .github/
-│   └── workflows/
-│       └── release.yml        # Cross-platform release CI
+│   └── build.sh / build.bat   # Build standalone binary
 ├── backend/
-│   ├── .env                   # Secrets (auto-generated, git-ignored)
-│   ├── Dockerfile             # Backend container image
 │   ├── server.py              # Standalone entry point (PyInstaller)
-│   ├── autoresearch-cockpit.spec  # PyInstaller spec
 │   ├── app/
 │   │   ├── main.py            # FastAPI entry point
 │   │   ├── config.py          # Settings (pydantic-settings)
-│   │   ├── db.py              # Async session factory
-│   │   ├── schemas.py         # Pydantic request/response models
 │   │   ├── models/            # SQLAlchemy ORM + state machine
 │   │   ├── providers/         # LLM provider abstraction
 │   │   ├── services/          # Git, patches, prompt builder, run engine
@@ -317,20 +311,11 @@ All timeout and CORS settings can also be changed at runtime via the **Settings*
 │   ├── alembic/               # Database migrations
 │   └── tests/                 # pytest suite
 └── frontend/
-    ├── Dockerfile             # Frontend container image
     └── src/
-        ├── components/
-        │   ├── welcome-setup.tsx     # First-launch server connection wizard
-        │   ├── server-switcher.tsx   # Sidebar server dropdown
-        │   ├── iteration-chart.tsx   # val_bpb training loss chart
-        │   ├── diff-compare-modal.tsx # Iteration diff compare viewer
-        │   ├── live-log-console.tsx  # Real-time training log viewer
-        │   ├── patch-review.tsx      # Diff review with accept/reject
-        │   └── model-chat.tsx        # Inline LLM chat panel
-        └── pages/
-            ├── settings.tsx          # Runtime settings configuration
-            ├── servers.tsx           # Settings → Servers management
-            └── channels.tsx          # Notification channel settings
+        ├── components/        # React components (chart, diff, chat, etc.)
+        ├── pages/             # Route pages (settings, servers, channels)
+        ├── stores/            # Zustand state stores
+        └── hooks/             # Custom React hooks
 ```
 
 ---
