@@ -235,12 +235,10 @@ export default function ProvidersPage() {
     if (editName) body.name = editName;
 
     if (authType === "proxy") {
-      if (editProxyUrl || editProxyApiKey) {
-        const creds: Record<string, string> = { mode: "proxy" };
-        if (editProxyUrl) creds.proxy_base_url = editProxyUrl;
-        if (editProxyApiKey) creds.api_key = editProxyApiKey;
-        body.credentials = creds;
-      }
+      const creds: Record<string, string> = { mode: "proxy" };
+      if (editProxyUrl) creds.proxy_base_url = editProxyUrl;
+      if (editProxyApiKey) creds.api_key = editProxyApiKey;
+      if (Object.keys(creds).length > 1) body.credentials = creds;
     } else if (authType === "api_key" || authType === "none") {
       if (editApiKey) body.credentials = { api_key: editApiKey };
     }
@@ -532,7 +530,12 @@ export default function ProvidersPage() {
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium">{c.name}</p>
-                          <p className="text-[11px] text-muted-foreground font-mono">{c.auth_type} · {formatDistanceToNow(c.created_at)}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono">
+                            {c.auth_type} · {formatDistanceToNow(c.created_at)}
+                            {c.credential_hints?.proxy_base_url && (
+                              <span className="ml-1 text-muted-foreground/60">· {c.credential_hints.proxy_base_url}</span>
+                            )}
+                          </p>
                         </div>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono ${
                           c.is_active
