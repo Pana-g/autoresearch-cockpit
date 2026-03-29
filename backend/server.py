@@ -110,18 +110,35 @@ def _run_alembic_upgrade(base: Path) -> None:
         sys.exit(1)
 
 
+def _default_port(command: str) -> int:
+    """Return the default port for the given command."""
+    return 5173 if command == "frontend" else 8000
+
+
 def main() -> None:
     multiprocessing.freeze_support()  # Required for frozen multiprocessing on Windows
 
-    parser = argparse.ArgumentParser(description="AutoResearch Cockpit server")
+    parser = argparse.ArgumentParser(
+        description="AutoResearch Cockpit server",
+        usage="%(prog)s [command] [options]",
+    )
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="all",
+        choices=["all", "backend", "frontend"],
+        help="What to start: all (default), backend, or frontend",
+    )
     parser.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=8000, help="Bind port (default: 8000)")
+    parser.add_argument("--port", type=int, default=None, help="Bind port (default: 8000, or 5173 for frontend)")
     parser.add_argument(
         "--no-migrate",
         action="store_true",
         help="Skip automatic database migrations on startup",
     )
     args = parser.parse_args()
+
+    port = args.port if args.port is not None else _default_port(args.command)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
 
@@ -134,13 +151,43 @@ def main() -> None:
         _load_dotenv(env_file)
         logger.info("Loaded environment from %s", env_file)
 
-    if not args.no_migrate:
-        _init_database()
+    # Tell the FastAPI app which components to serve
+    os.environ["AR_SERVE_MODE"] = args.command
 
+    if args.command == "frontend":
+        # Frontend-only: serve the bundled static files without backend API
+        _run_frontend(args.host, port)
+    else:
+        # Backend or All: run the full FastAPI app
+        if not args.no_migrate:
+            _init_database()
+
+        import uvicorn
+
+        label = "backend + frontend" if args.command == "all" else "backend API"
+        logger.info("Starting AutoResearch Cockpit (%s) on http://%s:%d", label, args.host, port)
+        uvicorn.run("app.main:app", host=args.host, port=port, log_level="info")
+
+
+def _run_frontend(host: str, port: int) -> None:
+    """Serve only the bundled frontend static files."""
     import uvicorn
 
-    logger.info("Starting AutoResearch Cockpit on http://%s:%d", args.host, args.port)
-    uvicorn.run("app.main:app", host=args.host, port=args.port, log_level="info")
+    dist_dir = _base_dir() / "frontend_dist"
+    if not dist_dir.exists():
+        logger.error("No bundled frontend found at %s", dist_dir)
+        sys.exit(1)
+
+    from starlette.applications import Starlette
+    from starlette.routing import Mount
+    from starlette.staticfiles import StaticFiles
+
+    frontend_app = Starlette(
+        routes=[Mount("/", app=StaticFiles(directory=str(dist_dir), html=True))],
+    )
+
+    logger.info("Serving frontend on http://%s:%d", host, port)
+    uvicorn.run(frontend_app, host=host, port=port, log_level="info")
 
 
 def _load_dotenv(path: Path) -> None:

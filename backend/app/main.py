@@ -84,7 +84,7 @@ def _run_alembic_upgrade() -> None:
 
 app = FastAPI(
     title="AutoResearch Cockpit",
-    version="0.5.1",
+    version="0.5.2",
     description="Control plane for karpathy/autoresearch",
     lifespan=lifespan,
 )
@@ -123,19 +123,26 @@ async def health():
 # ── Serve bundled / built frontend (must be mounted last) ─
 # When running as a PyInstaller bundle the frontend is in frontend_dist/ inside _MEIPASS.
 # During development it is the Vite build output at frontend/dist/ (if it exists).
-def _find_frontend_dist() -> Path | None:
-    if getattr(sys, "frozen", False):
-        candidate = Path(sys._MEIPASS) / "frontend_dist"  # type: ignore[attr-defined]
+# Skipped when AR_SERVE_MODE=backend (user wants API only).
+import os as _os
+
+_serve_mode = _os.environ.get("AR_SERVE_MODE", "all")
+
+if _serve_mode != "backend":
+    def _find_frontend_dist() -> Path | None:
+        if getattr(sys, "frozen", False):
+            candidate = Path(sys._MEIPASS) / "frontend_dist"  # type: ignore[attr-defined]
+        else:
+            candidate = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+        return candidate if candidate.exists() else None
+
+    _frontend_dist = _find_frontend_dist()
+    if _frontend_dist is not None:
+        from fastapi.staticfiles import StaticFiles
+
+        app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="frontend")
+        logger.info("Serving frontend from %s", _frontend_dist)
     else:
-        candidate = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
-    return candidate if candidate.exists() else None
-
-
-_frontend_dist = _find_frontend_dist()
-if _frontend_dist is not None:
-    from fastapi.staticfiles import StaticFiles
-
-    app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="frontend")
-    logger.info("Serving frontend from %s", _frontend_dist)
+        logger.debug("No frontend/dist found — skipping static file mount (dev mode or not yet built)")
 else:
-    logger.debug("No frontend/dist found — skipping static file mount (dev mode or not yet built)")
+    logger.info("Backend-only mode — skipping frontend static file mount")

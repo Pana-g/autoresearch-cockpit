@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"/></a>
-  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.5.1-informational" alt="Version"/></a>
+  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.5.2-informational" alt="Version"/></a>
   <a href="https://github.com/Pana-g/autoresearch-cockpit/issues"><img src="https://img.shields.io/github/issues/Pana-g/autoresearch-cockpit" alt="Open Issues"/></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions Welcome"/></a>
   <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-ff69b4" alt="Code of Conduct"/></a>
@@ -69,11 +69,50 @@ The Cockpit gives you all of this in a single browser tab.
 
 There are three ways to run the Cockpit, from easiest to most flexible:
 
-### Option A: Download a Binary (Recommended)
+### Option A: One-Line Install (Recommended)
 
-The fastest way. No Python, Node, or database setup required.
+The fastest way. No Python, Node, or database setup required. Detects your platform automatically.
 
-**1.** Download the latest binary for your platform from [Releases](https://github.com/Pana-g/autoresearch-cockpit/releases):
+```sh
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash
+```
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.ps1 | iex
+```
+
+Then run:
+```sh
+autoresearch-cockpit                  # start backend + frontend (default)
+autoresearch-cockpit backend          # backend API only (port 8000)
+autoresearch-cockpit frontend         # bundled frontend only (port 5173)
+autoresearch-cockpit --port 9000      # custom port
+```
+
+Open **http://localhost:8000** — the frontend and backend are both served from the single binary. A local SQLite database and encryption key are created automatically on first run.
+
+<details>
+<summary>Install options</summary>
+
+```sh
+# Install a specific version
+curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --version v0.5.2
+
+# Custom install directory
+curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --dir /usr/local/bin
+
+# Uninstall
+curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --uninstall
+```
+
+```powershell
+# Windows uninstall
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.ps1))) -Uninstall
+```
+
+Or download binaries manually from [Releases](https://github.com/Pana-g/autoresearch-cockpit/releases):
 
 | Platform | File |
 |----------|------|
@@ -81,23 +120,7 @@ The fastest way. No Python, Node, or database setup required.
 | Linux (x64)           | `autoresearch-cockpit-linux-x64`   |
 | Windows (x64)         | `autoresearch-cockpit-windows-x64.exe` |
 
-**2.** Run it:
-
-```sh
-# macOS / Linux
-chmod +x autoresearch-cockpit-*
-./autoresearch-cockpit-macos-arm64
-
-# Windows
-autoresearch-cockpit-windows-x64.exe
-```
-
-> **macOS users:** If you see *"Apple could not verify…"*, remove the quarantine flag first:
-> ```sh
-> xattr -d com.apple.quarantine autoresearch-cockpit-macos-arm64
-> ```
-
-Open **http://localhost:8000** — the frontend and backend are both served from the single binary. A local SQLite database and encryption key are created automatically on first run.
+</details>
 
 ---
 
@@ -146,11 +169,16 @@ run.bat
 | Backend   | http://localhost:8000       |
 | API Docs  | http://localhost:8000/docs  |
 
-You can also start services individually:
+You can also start services individually or on custom ports:
 ```sh
-./run.sh backend    # backend only
-./run.sh frontend   # frontend only
+./run.sh backend                         # backend only
+./run.sh frontend                        # frontend only
+./run.sh --backend-port 9000             # custom backend port
+./run.sh --frontend-port 3000            # custom frontend port
+./run.sh all --backend-port 9000 --frontend-port 3000  # both custom
 ```
+
+The run scripts check required tools automatically and print install commands if anything is missing.
 
 ---
 
