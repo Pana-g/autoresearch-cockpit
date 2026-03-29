@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { NumberInput } from "@/components/number-input";
 import {
-  Play, Pause, Square, RotateCcw, Zap, GitBranch, Activity, Brain, Target, Hash, RefreshCw, ShieldCheck, FastForward, Bot, FileCode, Flame, BarChart3, StopCircle, Timer, TrendingDown, Rocket, Ban, Loader2, Layers, Gauge, FileText, ChevronDown, ChevronUp, Shrink,
+  Play, Pause, Square, RotateCcw, Zap, GitBranch, Activity, Brain, Target, Hash, RefreshCw, ShieldCheck, FastForward, Bot, FileCode, Flame, BarChart3, StopCircle, Timer, TrendingDown, Rocket, Ban, Loader2, Layers, Gauge, FileText, ChevronDown, ChevronUp, Shrink, Cpu, MemoryStick, MonitorDot, AlertTriangle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -269,6 +269,22 @@ export default function RunCockpitPage() {
                   }}
                 />
               </div>
+              <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent transition-colors">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <AlertTriangle className="h-3.5 w-3.5 text-red-400" />
+                  <span>Max consec. failures</span>
+                </div>
+                <NumberInput
+                  integer
+                  min={1}
+                  className="w-16 h-7 text-xs text-right font-mono bg-muted/50 border-border"
+                  value={run.max_consecutive_failures}
+                  placeholder="6"
+                  onCommit={(val) => {
+                    updateSettings.mutate({ max_consecutive_failures: val ?? 6 });
+                  }}
+                />
+              </div>
 
               <div className="mt-3 pt-3 border-t border-border space-y-2.5">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Context</p>
@@ -438,6 +454,8 @@ export default function RunCockpitPage() {
                   iteration={run.iteration}
                   bestValBpb={run.best_val_bpb}
                   model={`${run.provider}/${run.model}`}
+                  errorMessage={run.error_message}
+                  machineInfo={run.machine_info}
                 />
               </motion.div>
             </AnimatePresence>
@@ -618,7 +636,7 @@ function CollapsibleActivity({ state, children }: { state: RunState; children: R
 /* ── Center panel content by state ─────────────────────── */
 
 function CenterContent({
-  state, lastAgent, lastTraining, onAction, projectId, runId, iteration, bestValBpb, model,
+  state, lastAgent, lastTraining, onAction, projectId, runId, iteration, bestValBpb, model, errorMessage, machineInfo,
 }: {
   state: RunState;
   lastAgent?: AgentStep | null;
@@ -629,6 +647,8 @@ function CenterContent({
   iteration: number;
   bestValBpb: number | null;
   model: string;
+  errorMessage?: string | null;
+  machineInfo?: string | null;
 }) {
   // Subscribe to streaming state here (not in the parent) so only this
   // component re-renders on every agent chunk, not the entire cockpit.
@@ -827,7 +847,11 @@ function CenterContent({
           <RotateCcw className="h-7 w-7 text-red-400" />
         </div>
         <p className="text-base font-medium text-red-400 mb-1">Run Failed</p>
-        <p className="text-xs text-muted-foreground mb-6">Check the step timeline for error details</p>
+        {errorMessage ? (
+          <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto font-mono bg-red-500/5 border border-red-500/20 rounded-lg px-4 py-3 text-left break-words whitespace-pre-wrap">{errorMessage}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground mb-6">Check the step timeline for error details</p>
+        )}
         <Button
           onClick={() => onAction("retry")}
           className="gap-2 bg-cyan-600/80 hover:bg-cyan-600 text-white shadow-lg shadow-cyan-500/10 active:scale-95 transition-all"
@@ -895,13 +919,50 @@ function CenterContent({
   }
 
   if (state === "preparing") {
+    const hw = machineInfo ? (() => { try { return JSON.parse(machineInfo); } catch { return null; } })() : null;
     return (
-      <div className="p-8 text-center">
-        <div className="h-14 w-14 rounded-2xl bg-cyan-500/10 flex items-center justify-center mx-auto mb-4">
-          <Loader2 className="h-7 w-7 text-cyan-400 animate-spin" />
+      <div className="p-8">
+        <div className="text-center mb-6">
+          <div className="h-14 w-14 rounded-2xl bg-cyan-500/10 flex items-center justify-center mx-auto mb-4">
+            <Loader2 className="h-7 w-7 text-cyan-400 animate-spin" />
+          </div>
+          <p className="text-base font-medium mb-1">Preparing Workspace</p>
+          <p className="text-xs text-muted-foreground">
+            {hw ? "Environment ready — machine assessed" : "Setting up environment, installing dependencies…"}
+          </p>
         </div>
-        <p className="text-base font-medium mb-1">Preparing Workspace</p>
-        <p className="text-xs text-muted-foreground">Setting up environment, installing dependencies…</p>
+        {hw && (
+          <div className="rounded-xl border bg-card p-4 max-w-sm mx-auto space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Machine Profile</p>
+            <div className="flex items-center gap-2.5 text-sm">
+              <MonitorDot className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">OS</span>
+              <span className="ml-auto font-mono text-xs">{hw.os}</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-sm">
+              <Cpu className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">CPU</span>
+              <span className="ml-auto font-mono text-xs">{hw.cpu_cores} cores</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-sm">
+              <MemoryStick className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">RAM</span>
+              <span className="ml-auto font-mono text-xs">{hw.ram_gb} GB</span>
+            </div>
+            {hw.gpus && hw.gpus.length > 0 ? hw.gpus.map((g: { name: string; vram_mb?: number }, i: number) => (
+              <div key={i} className="flex items-center gap-2.5 text-sm">
+                <Zap className="h-4 w-4 text-amber-400 shrink-0" />
+                <span className="text-muted-foreground">GPU</span>
+                <span className="ml-auto font-mono text-xs">{g.name}{g.vram_mb ? ` (${(g.vram_mb / 1024).toFixed(1)} GB)` : ""}</span>
+              </div>
+            )) : (
+              <div className="flex items-center gap-2.5 text-sm">
+                <Zap className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                <span className="text-muted-foreground/60">No GPU — CPU only</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -1042,7 +1103,7 @@ function PhaseIndicator({ state }: { state: RunState }) {
 /* ── Training Detail Panel ────────────────────────────── */
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Terminal, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { X, Terminal, CheckCircle2, XCircle } from "lucide-react";
 
 function TrainingDetailPanel({ step, onClose }: { step?: TrainingStep; onClose: () => void }) {
   if (!step) return null;

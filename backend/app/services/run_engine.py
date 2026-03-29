@@ -40,6 +40,7 @@ from app.services.patch_validator import (
     extract_patch_from_response,
     validate_patch,
 )
+from app.services.machine_info import format_machine_info, get_machine_info
 from app.services.prompt_builder import build_agent_prompt
 from app.services.compaction import (
     build_compacted_summary,
@@ -54,6 +55,37 @@ _active_processes: dict[str, asyncio.subprocess.Process] = {}
 
 # Track canceled runs so background tasks can bail out early
 _canceled_runs: set[str] = set()
+
+# Track consecutive connection errors per run for backoff / fast-fail
+_consecutive_conn_errors: dict[str, int] = {}
+MAX_CONSECUTIVE_CONN_ERRORS = 5
+CONN_ERROR_BASE_DELAY = 5  # seconds
+
+# Track consecutive iteration failures per run (agent no-patch, patch invalid, training failed)
+_consecutive_failures: dict[str, int] = {}
+
+
+def _is_connection_error(exc: Exception) -> bool:
+    """Return True for errors that indicate the provider endpoint is unreachable."""
+    type_name = type(exc).__name__
+    return type_name in ("APIConnectionError", "ConnectError", "ConnectionError")
+
+
+async def _check_consecutive_failures(run_id: str, limit: int) -> bool:
+    """Increment consecutive failure count and force-fail if threshold reached.
+
+    Returns True if the run was force-failed and the caller should return.
+    """
+    count = _consecutive_failures.get(run_id, 0) + 1
+    _consecutive_failures[run_id] = count
+    if limit > 0 and count >= limit:
+        _consecutive_failures.pop(run_id, None)
+        await _force_fail(
+            run_id,
+            f"Run stopped after {count} consecutive failed iterations",
+        )
+        return True
+    return False
 
 
 class RunCanceledError(Exception):
@@ -163,6 +195,15 @@ async def prepare_run(run_id: str, project_source_path: str) -> None:
                 raise RuntimeError(f"prepare.py failed: {stderr.decode()}")
             logger.info("prepare.py completed for workspace %s", workspace_path)
 
+            # Assess machine hardware (cross-platform)
+            await publish(run_id, "workspace_ready", {"path": workspace_path, "status": "assessing machine hardware..."})
+            machine_info = get_machine_info()
+            run.machine_info = json.dumps(machine_info)
+            session.add(run)
+            await session.commit()
+            logger.info("Machine assessment for run %s: %s", run_id, run.machine_info)
+            await publish(run_id, "machine_assessment", machine_info)
+
             ws = Workspace(
                 run_id=run_id,
                 workspace_path=workspace_path,
@@ -181,6 +222,7 @@ async def prepare_run(run_id: str, project_source_path: str) -> None:
         except Exception as e:
             logger.exception("Failed to prepare run %s", run_id)
             run.state = RunState.FAILED.value
+            run.error_message = str(e)
             session.add(run)
             await session.commit()
             await publish(run_id, "error", {"message": str(e)})
@@ -199,17 +241,21 @@ async def _force_fail(run_id: str, error_message: str) -> None:
             if RunState(run.state) in (RunState.CANCELED, RunState.DONE, RunState.FAILED):
                 return
             run.state = RunState.FAILED.value
+            run.error_message = error_message
             fresh.add(run)
             await fresh.commit()
             await publish(run_id, "state_change", {"state": RunState.FAILED.value, "iteration": run.iteration})
             await publish(run_id, "error", {"message": error_message})
     except Exception:
         logger.exception("Failed to force-fail run %s — run may be stuck", run_id)
+    finally:
+        _consecutive_failures.pop(run_id, None)
 
 
 async def force_fail_run(run_id: str) -> None:
     """Externally force a stuck run into FAILED state."""
     _canceled_runs.add(run_id)
+    _consecutive_conn_errors.pop(run_id, None)
     proc = _active_processes.pop(run_id, None)
     if proc:
         proc.send_signal(signal.SIGTERM)
@@ -244,6 +290,7 @@ async def wake_agent(run_id: str) -> None:
             return
 
         run.iteration += 1
+        run.error_message = None
         session.add(run)
         await session.commit()
 
@@ -295,6 +342,14 @@ async def wake_agent(run_id: str) -> None:
             active_notes = notes_result.scalars().all()
             human_notes = [n.content for n in active_notes]
 
+            # Build machine info string for first iteration
+            machine_info_text = None
+            if run.iteration == 1 and run.include_machine_info and run.machine_info:
+                try:
+                    machine_info_text = format_machine_info(json.loads(run.machine_info))
+                except Exception:
+                    logger.debug("Could not format machine_info for prompt", exc_info=True)
+
             # Build prompt
             messages = build_agent_prompt(
                 program_md=program_md,
@@ -307,6 +362,7 @@ async def wake_agent(run_id: str) -> None:
                 overfit_floor=run.overfit_floor,
                 compacted_summary=run.compacted_summary,
                 compacted_up_to=run.compacted_up_to,
+                machine_info=machine_info_text,
             )
 
             # Check if context compaction is needed
@@ -367,6 +423,7 @@ async def wake_agent(run_id: str) -> None:
                                 overfit_floor=run.overfit_floor,
                                 compacted_summary=run.compacted_summary,
                                 compacted_up_to=run.compacted_up_to,
+                                machine_info=machine_info_text,
                             )
 
                             await publish(run_id, "compaction_done", {
@@ -464,12 +521,15 @@ async def wake_agent(run_id: str) -> None:
                     "iteration": run.iteration,
                 })
 
+                if await _check_consecutive_failures(run_id, run.max_consecutive_failures):
+                    return
                 if await _should_auto_continue(session, run):
                     await publish(run_id, "auto_continue", {})
                     asyncio.create_task(continue_loop(run_id))
                 return
 
             clear_agent_snapshot(run_id)
+            _consecutive_conn_errors.pop(run_id, None)  # reset on success
             await publish(run_id, "agent_streaming_end", {})
 
             # Check cancellation after streaming completes
@@ -537,6 +597,8 @@ async def wake_agent(run_id: str) -> None:
                     # Retry: go back to awaiting_agent and re-wake
                     await transition_state(session, run, RunState.AWAITING_NEXT_ACTION)
                     await publish(run_id, "error", {"message": f"Patch validation failed: {e}. Retrying..."})
+                    if await _check_consecutive_failures(run_id, run.max_consecutive_failures):
+                        return
                     if await _should_auto_continue(session, run):
                         await publish(run_id, "auto_continue", {})
                         asyncio.create_task(continue_loop(run_id))
@@ -548,6 +610,8 @@ async def wake_agent(run_id: str) -> None:
                 # Retry: go back to awaiting_agent and re-wake
                 await transition_state(session, run, RunState.AWAITING_NEXT_ACTION)
                 await publish(run_id, "error", {"message": "Agent did not produce a valid patch. Retrying..."})
+                if await _check_consecutive_failures(run_id, run.max_consecutive_failures):
+                    return
                 if await _should_auto_continue(session, run):
                     await publish(run_id, "auto_continue", {})
                     asyncio.create_task(continue_loop(run_id))
@@ -558,7 +622,57 @@ async def wake_agent(run_id: str) -> None:
         except Exception as e:
             logger.exception("Agent failed for run %s", run_id)
             clear_agent_snapshot(run_id)
-            await _force_fail(run_id, str(e))
+            error_detail = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+
+            conn_err = _is_connection_error(e)
+            if conn_err:
+                count = _consecutive_conn_errors.get(run_id, 0) + 1
+                _consecutive_conn_errors[run_id] = count
+            else:
+                _consecutive_conn_errors.pop(run_id, None)
+
+            # Connection errors: fail fast after repeated failures
+            if conn_err and _consecutive_conn_errors.get(run_id, 0) >= MAX_CONSECUTIVE_CONN_ERRORS:
+                _consecutive_conn_errors.pop(run_id, None)
+                await _force_fail(
+                    run_id,
+                    f"Provider unreachable after {MAX_CONSECUTIVE_CONN_ERRORS} consecutive attempts: {error_detail}",
+                )
+                return
+
+            # Recover: transition to AWAITING_NEXT_ACTION and auto-continue
+            # rather than permanently failing the run
+            try:
+                async with async_session_factory() as fresh:
+                    run = await fresh.get(Run, run_id)
+                    if run and RunState(run.state) not in (RunState.CANCELED, RunState.DONE, RunState.FAILED):
+                        # Roll back iteration on connection errors — the agent never ran
+                        if conn_err and run.iteration > 1:
+                            run.iteration -= 1
+                            fresh.add(run)
+                            await fresh.commit()
+
+                        await transition_state(fresh, run, RunState.AWAITING_NEXT_ACTION)
+                        if conn_err:
+                            delay = CONN_ERROR_BASE_DELAY * (2 ** (_consecutive_conn_errors.get(run_id, 1) - 1))
+                            delay = min(delay, 60)
+                            await publish(run_id, "error", {
+                                "message": f"Provider unreachable: {error_detail}. Retrying in {delay}s..."
+                            })
+                            if await _should_auto_continue(fresh, run):
+                                await asyncio.sleep(delay)
+                                if run_id not in _canceled_runs:
+                                    await publish(run_id, "auto_continue", {})
+                                    asyncio.create_task(continue_loop(run_id))
+                        else:
+                            await publish(run_id, "error", {"message": f"Agent error: {error_detail}. Retrying..."})
+                            if await _should_auto_continue(fresh, run):
+                                await publish(run_id, "auto_continue", {})
+                                asyncio.create_task(continue_loop(run_id))
+                        return
+            except Exception:
+                logger.debug("Could not auto-recover agent for run %s, falling back to force-fail", run_id, exc_info=True)
+            await _force_fail(run_id, error_detail)
 
 
 async def approve_patch(run_id: str) -> None:
@@ -661,29 +775,18 @@ async def _run_training(run_id: str, agent_step_id: str) -> None:
             stdout_lines = []
             stderr_lines = []
 
-            # Watchdog: detect when training reaches 100% but process doesn't exit
-            _completion_detected_at: dict[str, float | None] = {"t": None}
-            _COMPLETION_GRACE_SECONDS = 30
-            _completion_re = re.compile(r"\(100\.0%\).*remaining:\s*0s")
-
             async def stream_output(stream, lines_list, stream_name):
-                # Read raw chunks instead of readline to avoid
-                # LimitOverrunError when training scripts use \r
-                # with end="" (no newline) for in-place progress updates.
                 buf = ""
                 while True:
                     chunk = await stream.read(8192)
                     if not chunk:
-                        # Flush remaining buffer
                         if buf:
                             lines_list.append(buf)
                             await publish(run_id, f"training_{stream_name}", {"line": buf.rstrip()})
                         break
                     text = chunk.decode("utf-8", errors="replace")
                     buf += text
-                    # Split on \n or \r to emit lines
                     while "\n" in buf or "\r" in buf:
-                        # Find earliest line boundary
                         idx_n = buf.find("\n")
                         idx_r = buf.find("\r")
                         if idx_n == -1:
@@ -696,30 +799,12 @@ async def _run_training(run_id: str, agent_step_id: str) -> None:
                         buf = buf[idx + 1 :]
                         lines_list.append(line)
                         await publish(run_id, f"training_{stream_name}", {"line": line.rstrip()})
-                        # Detect training completion (100%, remaining: 0s)
-                        if stream_name == "stdout" and _completion_detected_at["t"] is None:
-                            if _completion_re.search(line):
-                                _completion_detected_at["t"] = time.monotonic()
-
-            async def completion_watchdog():
-                """Kill process if it keeps running past 100% completion."""
-                while proc.returncode is None:
-                    await asyncio.sleep(5)
-                    t = _completion_detected_at["t"]
-                    if t is not None and (time.monotonic() - t) > _COMPLETION_GRACE_SECONDS:
-                        logger.warning(
-                            "Training stuck past 100%% for >%ds in run %s — killing",
-                            _COMPLETION_GRACE_SECONDS, run_id,
-                        )
-                        proc.kill()
-                        return
 
             try:
                 await asyncio.wait_for(
                     asyncio.gather(
                         stream_output(proc.stdout, stdout_lines, "stdout"),
                         stream_output(proc.stderr, stderr_lines, "stderr"),
-                        completion_watchdog(),
                     ),
                     timeout=settings.default_training_timeout_seconds,
                 )
@@ -788,6 +873,8 @@ async def _run_training(run_id: str, agent_step_id: str) -> None:
                 await publish(run_id, "training_failed", {"exit_code": exit_code})
 
                 # Auto-continue if enabled (retry with a different approach)
+                if await _check_consecutive_failures(run_id, run.max_consecutive_failures):
+                    return
                 if await _should_auto_continue(session, run):
                     await publish(run_id, "auto_continue", {})
                     asyncio.create_task(continue_loop(run_id))
@@ -820,6 +907,8 @@ async def _run_training(run_id: str, agent_step_id: str) -> None:
                 clear_training_snapshot(run_id)
                 await publish(run_id, "training_failed", {"exit_code": exit_code, "reason": "val_bpb_nan"})
 
+                if await _check_consecutive_failures(run_id, run.max_consecutive_failures):
+                    return
                 if await _should_auto_continue(session, run):
                     await publish(run_id, "auto_continue", {})
                     asyncio.create_task(continue_loop(run_id))
@@ -827,6 +916,7 @@ async def _run_training(run_id: str, agent_step_id: str) -> None:
 
             training_step.val_bpb = val_bpb
             training_step.status = "completed"
+            _consecutive_failures.pop(run_id, None)  # reset on successful training
 
             # Compare with best
             improved = False
@@ -917,18 +1007,43 @@ async def _run_training(run_id: str, agent_step_id: str) -> None:
             return
         except Exception as e:
             logger.exception("Training failed for run %s", run_id)
+            error_detail = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
             training_step.status = "failed"
-            training_step.stderr_log = str(e)
+            training_step.stderr_log = error_detail
+            training_step.stdout_log = "".join(stdout_lines) if stdout_lines else ""
             session.add(training_step)
             # Check if the run was already canceled before overwriting state
             await session.refresh(run)
             if RunState(run.state) in (RunState.CANCELED, RunState.DONE, RunState.FAILED):
                 await session.commit()
                 return
-            run.state = RunState.FAILED.value
-            session.add(run)
+
+            # Try to revert the patch so the workspace is clean for the next iteration
+            try:
+                ws_result = await session.execute(select(Workspace).where(Workspace.run_id == run_id))
+                workspace = ws_result.scalar_one_or_none()
+                if workspace:
+                    git = GitService(workspace.workspace_path)
+                    git.open()
+                    git.reset_to(workspace.current_commit + "~1")
+                    workspace.current_commit = git.get_current_sha()
+                    session.add(workspace)
+            except Exception:
+                logger.debug("Could not revert patch after training exception for run %s", run_id, exc_info=True)
+
             await session.commit()
-            await publish(run_id, "error", {"message": str(e)})
+
+            await transition_state(session, run, RunState.TRAINING_FINISHED)
+            await _record_memory(session, run, training_step, improved=False)
+            await transition_state(session, run, RunState.AWAITING_NEXT_ACTION)
+            clear_training_snapshot(run_id)
+            await publish(run_id, "training_failed", {"exit_code": -1, "reason": error_detail})
+
+            if await _check_consecutive_failures(run_id, run.max_consecutive_failures):
+                return
+            if await _should_auto_continue(session, run):
+                await publish(run_id, "auto_continue", {})
+                asyncio.create_task(continue_loop(run_id))
 
 
 async def continue_loop(run_id: str) -> None:

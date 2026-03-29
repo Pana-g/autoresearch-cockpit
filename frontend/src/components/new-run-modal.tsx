@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { NumberInput } from "@/components/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Rocket, Play, Timer } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Rocket, Play, Timer, Cpu, Layers, AlertTriangle } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -26,6 +27,9 @@ export function NewRunModal({ open, onOpenChange, projectId: initialProjectId }:
   const [model, setModel] = useState("");
   const [credentialId, setCredentialId] = useState<string>();
   const [maxIterations, setMaxIterations] = useState(0);
+  const [includeMachineInfo, setIncludeMachineInfo] = useState(true);
+  const [autoCompact, setAutoCompact] = useState(true);
+  const [maxConsecutiveFailures, setMaxConsecutiveFailures] = useState(6);
 
   // Sync when projectId prop changes
   const prevInitial = useState(initialProjectId)[0];
@@ -36,7 +40,7 @@ export function NewRunModal({ open, onOpenChange, projectId: initialProjectId }:
   const handleCreate = () => {
     if (!projectId || !provider || !model) return;
     createRun.mutate(
-      { projectId, provider, model, credential_id: credentialId, max_iterations: maxIterations },
+      { projectId, provider, model, credential_id: credentialId, max_iterations: maxIterations, include_machine_info: includeMachineInfo, auto_compact: autoCompact, max_consecutive_failures: maxConsecutiveFailures },
       {
         onSuccess: (run) => {
           onOpenChange(false);
@@ -52,6 +56,7 @@ export function NewRunModal({ open, onOpenChange, projectId: initialProjectId }:
       setModel("");
       setCredentialId(undefined);
       setMaxIterations(0);
+      setIncludeMachineInfo(true);
       createRun.reset();
     }
     onOpenChange(v);
@@ -118,6 +123,51 @@ export function NewRunModal({ open, onOpenChange, projectId: initialProjectId }:
                 onCommit={(val) => setMaxIterations(val ?? 0)}
               />
               <span className="text-[10px] text-muted-foreground whitespace-nowrap">0 = unlimited</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 py-1">
+            <div className="flex items-center gap-2">
+              <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Hardware Detection</p>
+                <p className="text-[10px] text-muted-foreground">Send machine specs to agent for hyperparameter tuning</p>
+              </div>
+            </div>
+            <Switch
+              checked={includeMachineInfo}
+              onCheckedChange={(v) => setIncludeMachineInfo(!!v)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4 py-1">
+            <div className="flex items-center gap-2">
+              <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Auto Compact</p>
+                <p className="text-[10px] text-muted-foreground">Automatically compact context when threshold is reached</p>
+              </div>
+            </div>
+            <Switch
+              checked={autoCompact}
+              onCheckedChange={(v) => setAutoCompact(!!v)}
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5 block font-medium">
+              <AlertTriangle className="h-3 w-3 inline mr-1 -mt-0.5" />Max Consecutive Failures
+            </label>
+            <div className="flex items-center gap-2">
+              <NumberInput
+                integer
+                min={1}
+                className="h-9 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors font-mono"
+                value={maxConsecutiveFailures}
+                placeholder="6"
+                onCommit={(val) => setMaxConsecutiveFailures(val ?? 6)}
+              />
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">consecutive failures before stopping</span>
             </div>
           </div>
 

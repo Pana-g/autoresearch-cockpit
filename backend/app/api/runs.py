@@ -60,7 +60,9 @@ async def create_run(project_id: str, body: RunCreate, db: AsyncSession = Depend
         max_iterations=body.max_iterations if body.max_iterations is not None else project.default_max_iterations,
         overfit_floor=body.overfit_floor if "overfit_floor" in body.model_fields_set else project.default_overfit_floor,
         overfit_margin=body.overfit_margin if "overfit_margin" in body.model_fields_set else project.default_overfit_margin,
-        auto_compact=project.default_auto_compact,
+        include_machine_info=body.include_machine_info if body.include_machine_info is not None else project.default_include_machine_info,
+        max_consecutive_failures=body.max_consecutive_failures if body.max_consecutive_failures is not None else project.default_max_consecutive_failures,
+        auto_compact=body.auto_compact if body.auto_compact is not None else project.default_auto_compact,
         compact_threshold_pct=project.default_compact_threshold_pct,
         context_limit=project.default_context_limit,
     )
@@ -113,6 +115,8 @@ async def update_run_settings(
         run.compact_threshold_pct = body.compact_threshold_pct
     if body.context_limit is not None:
         run.context_limit = body.context_limit
+    if body.max_consecutive_failures is not None:
+        run.max_consecutive_failures = body.max_consecutive_failures
     db.add(run)
     await db.commit()
     await db.refresh(run)

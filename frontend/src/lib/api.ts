@@ -48,6 +48,8 @@ export const projects = {
   create: (body: { name: string; description?: string; source_path: string }) =>
     request<Project>("/projects", { method: "POST", body: JSON.stringify(body) }),
   delete: (id: string) => request<void>(`/projects/${id}`, { method: "DELETE" }),
+  browseDirs: (path: string) =>
+    request<{ dirs: string[]; base: string }>(`/projects/browse-dirs?path=${encodeURIComponent(path)}`),
   setBest: (projectId: string, trainingStepId: string) =>
     request<Project>(`/projects/${projectId}/best`, {
       method: "PUT",
@@ -59,6 +61,8 @@ export const projects = {
     default_max_iterations?: number;
     default_overfit_floor?: number | null;
     default_overfit_margin?: number | null;
+    default_include_machine_info?: boolean;
+    default_max_consecutive_failures?: number;
     default_auto_compact?: boolean;
     default_compact_threshold_pct?: number;
     default_context_limit?: number;
@@ -77,7 +81,7 @@ export const runs = {
   list: (projectId: string, limit = 25, offset = 0) => request<Run[]>(`/projects/${projectId}/runs?limit=${limit}&offset=${offset}`),
   get: (projectId: string, runId: string) =>
     request<Run>(`/projects/${projectId}/runs/${runId}`),
-  create: (projectId: string, body: { provider: string; model: string; credential_id?: string }) =>
+  create: (projectId: string, body: { provider: string; model: string; credential_id?: string; include_machine_info?: boolean; max_consecutive_failures?: number; auto_compact?: boolean; max_iterations?: number }) =>
     request<Run>(`/projects/${projectId}/runs`, { method: "POST", body: JSON.stringify(body) }),
   action: (projectId: string, runId: string, action: RunAction) =>
     request<{ status: string }>(`/projects/${projectId}/runs/${runId}/actions`, {
@@ -124,7 +128,7 @@ export const runs = {
       best_commit: string | null;
       git_branch: string | null;
     }>(`/projects/${projectId}/runs/${runId}/workspace-files`),
-  updateSettings: (projectId: string, runId: string, settings: { auto_approve?: boolean; auto_continue?: boolean; max_iterations?: number; stop_requested?: boolean; overfit_floor?: number | null; overfit_margin?: number | null; provider?: string; model?: string; credential_id?: string; auto_compact?: boolean; compact_threshold_pct?: number; context_limit?: number }) =>
+  updateSettings: (projectId: string, runId: string, settings: { auto_approve?: boolean; auto_continue?: boolean; max_iterations?: number; stop_requested?: boolean; overfit_floor?: number | null; overfit_margin?: number | null; provider?: string; model?: string; credential_id?: string; auto_compact?: boolean; compact_threshold_pct?: number; context_limit?: number; max_consecutive_failures?: number }) =>
     request<Run>(`/projects/${projectId}/runs/${runId}/settings`, {
       method: "PATCH",
       body: JSON.stringify(settings),
@@ -245,7 +249,6 @@ export const channels = {
     channel_type: string;
     config: Record<string, string>;
     notification_events?: NotificationEventType[];
-    commands_enabled?: boolean;
     linked_run_id?: string | null;
   }) =>
     request<NotificationChannel>("/channels", { method: "POST", body: JSON.stringify(body) }),
@@ -253,7 +256,6 @@ export const channels = {
     name?: string;
     config?: Record<string, string>;
     notification_events?: NotificationEventType[];
-    commands_enabled?: boolean;
     is_active?: boolean;
     linked_run_id?: string | null;
   }) =>
@@ -268,7 +270,6 @@ export const channels = {
 export interface RuntimeSettings {
   default_training_timeout_seconds: number;
   default_agent_inactivity_timeout: number;
-  max_run_memory_records: number;
   cors_origins: string[];
   encryption_key_set: boolean;
 }
@@ -276,7 +277,6 @@ export interface RuntimeSettings {
 export interface RuntimeSettingsUpdate {
   default_training_timeout_seconds?: number;
   default_agent_inactivity_timeout?: number;
-  max_run_memory_records?: number;
   encryption_key?: string;
 }
 

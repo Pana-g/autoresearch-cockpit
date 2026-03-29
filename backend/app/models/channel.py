@@ -16,7 +16,6 @@ class NotificationChannel(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # JSON list of enabled notification event types, e.g. '["new_best","run_failed"]'
     notification_events: Mapped[str] = mapped_column(Text, default='["new_best","training_failed","run_completed","run_failed"]')
-    commands_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     # If set, only notify for this run; null = all runs
     linked_run_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("runs.id", ondelete="SET NULL"), nullable=True, default=None

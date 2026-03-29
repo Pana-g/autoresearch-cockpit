@@ -3,7 +3,7 @@ import { useProject, useUpdateProjectSettings, useSetProjectBest, useProjectTrai
 import { Switch } from "@/components/ui/switch";
 import { NumberInput } from "@/components/number-input";
 import { Button } from "@/components/ui/button";
-import { Settings, ArrowLeft, ShieldCheck, FastForward, Timer, TrendingDown, Trophy, Loader2, Layers, Gauge } from "lucide-react";
+import { Settings, ArrowLeft, ShieldCheck, FastForward, Timer, TrendingDown, Trophy, Loader2, Layers, Gauge, Cpu, AlertTriangle } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 
@@ -130,6 +130,44 @@ export default function ProjectSettingsPage() {
             />
           </div>
 
+          {/* Hardware Detection */}
+          <div className="glass rounded-xl px-5 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-sky-500/10 flex items-center justify-center">
+                <Cpu className="h-4 w-4 text-sky-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Hardware Detection</p>
+                <p className="text-[11px] text-muted-foreground">Send machine specs to agent for hyperparameter tuning</p>
+              </div>
+            </div>
+            <Switch
+              checked={project.default_include_machine_info}
+              onCheckedChange={(v) => handleToggle("default_include_machine_info", v)}
+            />
+          </div>
+
+          {/* Max Consecutive Failures */}
+          <div className="glass rounded-xl px-5 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Max Consecutive Failures</p>
+                <p className="text-[11px] text-muted-foreground">Stop run after this many consecutive failed iterations</p>
+              </div>
+            </div>
+            <NumberInput
+              integer
+              min={1}
+              className="h-9 w-24 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors font-mono text-right"
+              value={project.default_max_consecutive_failures}
+              placeholder="6"
+              onCommit={(val) => handleNumber("default_max_consecutive_failures", val ?? 6)}
+            />
+          </div>
+
           {/* Overfit Floor */}
           <div className="glass rounded-xl px-5 py-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -217,8 +255,8 @@ export default function ProjectSettingsPage() {
               max={95}
               className="h-9 w-24 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors font-mono text-right"
               value={project.default_compact_threshold_pct || ""}
-              placeholder="50"
-              onCommit={(val) => handleNumber("default_compact_threshold_pct", val ?? 50)}
+              placeholder="75"
+              onCommit={(val) => handleNumber("default_compact_threshold_pct", val ?? 75)}
             />
           </div>
 

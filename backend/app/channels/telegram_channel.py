@@ -52,7 +52,6 @@ def _format_message(event_type: str, payload: dict) -> str:
 class TelegramChannel(BaseChannel):
     name = "telegram"
     label = "Telegram"
-    supports_commands = True
 
     def get_config_fields(self) -> list[dict]:
         return [

@@ -15,6 +15,7 @@ def build_agent_prompt(
     overfit_floor: float | None = None,
     compacted_summary: str | None = None,
     compacted_up_to: int | None = None,
+    machine_info: str | None = None,
 ) -> list[dict]:
     """Assemble the messages list for the agent call.
 
@@ -35,6 +36,16 @@ def build_agent_prompt(
         parts.append(f"- **Overfitting floor: {overfit_floor:.4f}** — any val_bpb below this will be rejected as overfitting.\n")
     parts.append(f"- Total iterations so far: {len(memory_records)}\n")
     parts.append("\n")
+
+    # Machine hardware profile (first iteration only)
+    if machine_info:
+        parts.append(machine_info)
+        parts.append(
+            "\n**Use the hardware profile above to choose sensible initial hyperparameters** "
+            "(batch size, model dimensions, number of layers, sequence length, etc.) "
+            "that will fit comfortably in this machine's memory and finish training within ~5 minutes. "
+            "If there is no GPU, ensure the code runs on CPU only.\n\n"
+        )
 
     parts.append("## Program Specification (program.md)\n")
     parts.append(program_md)

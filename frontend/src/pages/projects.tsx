@@ -1,13 +1,110 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useProjects, useCreateProject, useDeleteProject } from "@/hooks/use-queries";
+import { useProjects, useCreateProject, useDeleteProject, useBrowseDirs } from "@/hooks/use-queries";
 import { useConnectionStore } from "@/stores/connection-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { formatDistanceToNow } from "@/lib/format";
-import { FolderOpen, Plus, Trash2, ChevronRight, Beaker, Server } from "lucide-react";
+import { FolderOpen, Plus, Trash2, ChevronRight, Beaker, Server, Folder } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+
+function PathInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(-1);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  const query = value || "~";
+  const { data } = useBrowseDirs(query);
+  const dirs = data?.dirs ?? [];
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Reset highlight when suggestions change
+  useEffect(() => { setHighlightIdx(-1); }, [dirs.length]);
+
+  // Scroll highlighted item into view
+  useEffect(() => {
+    if (highlightIdx >= 0 && listRef.current) {
+      const el = listRef.current.children[highlightIdx] as HTMLElement | undefined;
+      el?.scrollIntoView({ block: "nearest" });
+    }
+  }, [highlightIdx]);
+
+  const select = (dir: string) => {
+    onChange(dir);
+    setOpen(true); // keep open to drill deeper
+    setHighlightIdx(-1);
+    inputRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open || dirs.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIdx((i) => (i + 1) % dirs.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIdx((i) => (i <= 0 ? dirs.length - 1 : i - 1));
+    } else if (e.key === "Enter" && highlightIdx >= 0) {
+      e.preventDefault();
+      select(dirs[highlightIdx]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    } else if (e.key === "Tab" && dirs.length === 1) {
+      e.preventDefault();
+      select(dirs[0]);
+    }
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <Input
+        ref={inputRef}
+        placeholder="~/autoresearch (start typing to browse)"
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={handleKeyDown}
+        className="h-9 text-sm font-mono bg-muted/50 border-border focus:border-primary/40 transition-colors"
+        autoComplete="off"
+      />
+      {open && dirs.length > 0 && (
+        <ul
+          ref={listRef}
+          className="absolute z-50 top-full left-0 right-0 mt-1 max-h-72 overflow-auto rounded-lg border border-border bg-popover shadow-lg p-1"
+        >
+          {dirs.map((dir, i) => {
+            const name = dir.split("/").pop() || dir;
+            const isHidden = name.startsWith(".");
+            return (
+              <li
+                key={dir}
+                onMouseDown={(e) => { e.preventDefault(); select(dir); }}
+                onMouseEnter={() => setHighlightIdx(i)}
+                className={`flex items-center gap-2.5 px-3 py-2 text-[13px] font-mono rounded-md cursor-pointer transition-colors ${
+                  i === highlightIdx ? "bg-accent text-foreground" : "text-foreground hover:bg-accent"
+                }${isHidden ? " opacity-50" : ""}`}
+              >
+                <Folder className="h-4 w-4 shrink-0 text-primary/70" />
+                <span className="truncate">{name}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function ProjectsPage() {
   const { data: projects, isLoading } = useProjects();
@@ -50,7 +147,7 @@ export default function ProjectsPage() {
           className="gap-2 bg-primary/90 hover:bg-primary text-primary-foreground shadow-sm active:scale-95 transition-all duration-150"
         >
           <Plus className="h-4 w-4" />
-          Import Project
+          Add Project
         </Button>
       </motion.div>
 
@@ -59,15 +156,15 @@ export default function ProjectsPage() {
         {showCreate && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto", overflow: "visible", transitionEnd: { overflow: "visible" } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden"
+            style={{ overflow: "hidden" }}
           >
             <div className="glass rounded-xl p-5 space-y-3">
               <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">New Project</p>
               <Input placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} className="h-9 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors" />
-              <Input placeholder="/path/to/autoresearch/workspace" value={sourcePath} onChange={(e) => setSourcePath(e.target.value)} className="h-9 text-sm font-mono bg-muted/50 border-border focus:border-primary/40 transition-colors" />
+              <PathInput value={sourcePath} onChange={setSourcePath} />
               <Input placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} className="h-9 text-sm bg-muted/50 border-border focus:border-primary/40 transition-colors" />
               <div className="flex gap-2 pt-1">
                 <Button size="sm" onClick={handleCreate} disabled={!name || !sourcePath || createProject.isPending} className="active:scale-95 transition-transform">

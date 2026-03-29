@@ -11,7 +11,6 @@ class ChannelTypeInfo:
     name: str
     label: str
     config_fields: list[dict] = field(default_factory=list)
-    supports_commands: bool = False
 
 
 class BaseChannel(ABC):
@@ -19,7 +18,6 @@ class BaseChannel(ABC):
 
     name: str  # e.g. "discord", "telegram"
     label: str  # e.g. "Discord", "Telegram"
-    supports_commands: bool = False
 
     @abstractmethod
     def get_config_fields(self) -> list[dict]:
@@ -44,5 +42,4 @@ class BaseChannel(ABC):
             name=self.name,
             label=self.label,
             config_fields=self.get_config_fields(),
-            supports_commands=self.supports_commands,
         )

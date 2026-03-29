@@ -22,16 +22,14 @@ async def lifespan(app: FastAPI):
     # Startup
     await recover_stuck_runs()
 
-    # Start notification service and channel command receivers
-    from app.services import notification_service, channel_manager
+    # Start notification service
+    from app.services import notification_service
     await notification_service.start()
-    await channel_manager.start_all()
 
     yield
 
     # Shutdown
     await notification_service.stop()
-    await channel_manager.stop_all()
 
 
 app = FastAPI(

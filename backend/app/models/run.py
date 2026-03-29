@@ -28,10 +28,14 @@ class Run(Base, TimestampMixin):
     overfit_margin: Mapped[float | None] = mapped_column(Float, nullable=True)  # stop when val_bpb within this distance above floor
     pending_restart_from: Mapped[int | None] = mapped_column(Integer, nullable=True)  # set by checkpoint restart, consumed by wake_agent
     config_json: Mapped[str] = mapped_column(Text, default="{}")  # extra run config
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)  # reason for failure
+    machine_info: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON machine hardware profile
+    include_machine_info: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")  # send hardware profile to agent
+    max_consecutive_failures: Mapped[int] = mapped_column(Integer, default=6, server_default="6")  # 0 = unlimited, fail run after this many consecutive failed iterations
 
     # Context compaction settings
     auto_compact: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
-    compact_threshold_pct: Mapped[int] = mapped_column(Integer, default=50, server_default="50")  # % of context window
+    compact_threshold_pct: Mapped[int] = mapped_column(Integer, default=75, server_default="75")  # % of context window
     context_limit: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # 0 = auto-detect from model
     compacted_summary: Mapped[str | None] = mapped_column(Text, nullable=True)  # compacted memory text
     compacted_up_to: Mapped[int | None] = mapped_column(Integer, nullable=True)  # iteration up to which records are compacted

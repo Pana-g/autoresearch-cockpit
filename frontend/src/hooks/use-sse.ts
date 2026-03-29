@@ -159,6 +159,9 @@ export function useRunSSE(projectId: string, runId: string) {
               duration: 5000,
             });
             break;
+          case "machine_assessment":
+            scheduleInvalidation("run");
+            break;
         }
       };
 

@@ -11,7 +11,6 @@ router = APIRouter(tags=["settings"])
 class RuntimeSettings(BaseModel):
     default_training_timeout_seconds: int
     default_agent_inactivity_timeout: int
-    max_run_memory_records: int
     cors_origins: list[str]
     encryption_key_set: bool  # read-only indicator
 
@@ -19,7 +18,6 @@ class RuntimeSettings(BaseModel):
 class RuntimeSettingsUpdate(BaseModel):
     default_training_timeout_seconds: int | None = None
     default_agent_inactivity_timeout: int | None = None
-    max_run_memory_records: int | None = None
     encryption_key: str | None = None
 
 
@@ -28,7 +26,6 @@ async def get_settings():
     return RuntimeSettings(
         default_training_timeout_seconds=settings.default_training_timeout_seconds,
         default_agent_inactivity_timeout=settings.default_agent_inactivity_timeout,
-        max_run_memory_records=settings.max_run_memory_records,
         cors_origins=settings.cors_origins,
         encryption_key_set=bool(settings.encryption_key),
     )
@@ -40,15 +37,12 @@ async def update_settings(body: RuntimeSettingsUpdate):
         settings.default_training_timeout_seconds = body.default_training_timeout_seconds
     if body.default_agent_inactivity_timeout is not None:
         settings.default_agent_inactivity_timeout = body.default_agent_inactivity_timeout
-    if body.max_run_memory_records is not None:
-        settings.max_run_memory_records = body.max_run_memory_records
     if body.encryption_key is not None:
         settings.encryption_key = body.encryption_key
 
     return RuntimeSettings(
         default_training_timeout_seconds=settings.default_training_timeout_seconds,
         default_agent_inactivity_timeout=settings.default_agent_inactivity_timeout,
-        max_run_memory_records=settings.max_run_memory_records,
         cors_origins=settings.cors_origins,
         encryption_key_set=bool(settings.encryption_key),
     )

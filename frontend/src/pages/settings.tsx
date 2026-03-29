@@ -7,7 +7,7 @@ import { NumberInput } from "@/components/number-input";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import {
-  Settings, Timer, Brain, Layers, Eye, EyeOff, Save, Loader2, ShieldCheck, Clock,
+  Settings, Timer, Brain, Eye, EyeOff, Save, Loader2, ShieldCheck, Clock,
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -16,17 +16,15 @@ export default function SettingsPage() {
 
   const [trainingTimeout, setTrainingTimeout] = useState<number | null>(null);
   const [agentTimeout, setAgentTimeout] = useState<number | null>(null);
-  const [maxMemory, setMaxMemory] = useState<number | null>(null);
   const [encryptionKey, setEncryptionKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   // Sync local state on first load
-  const initialized = settings && trainingTimeout === null && agentTimeout === null && maxMemory === null;
+  const initialized = settings && trainingTimeout === null && agentTimeout === null;
   if (initialized) {
     setTrainingTimeout(settings.default_training_timeout_seconds);
     setAgentTimeout(settings.default_agent_inactivity_timeout);
-    setMaxMemory(settings.max_run_memory_records);
   }
 
   const handleSave = () => {
@@ -36,9 +34,6 @@ export default function SettingsPage() {
     }
     if (agentTimeout !== null && agentTimeout !== settings?.default_agent_inactivity_timeout) {
       body.default_agent_inactivity_timeout = agentTimeout;
-    }
-    if (maxMemory !== null && maxMemory !== settings?.max_run_memory_records) {
-      body.max_run_memory_records = maxMemory;
     }
     if (encryptionKey) {
       body.encryption_key = encryptionKey;
@@ -132,35 +127,6 @@ export default function SettingsPage() {
                   Max no-output time before agent is killed ({agentTimeout ? `${Math.round(agentTimeout / 60)} min` : "—"})
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* Memory Section */}
-          <div className="glass rounded-xl p-5 space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Layers className="h-4 w-4 text-orange-400" />
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Memory</p>
-            </div>
-
-            <div>
-              <Label className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
-                Max Memory Records
-              </Label>
-              <div className="flex items-center gap-2 mt-1.5">
-                <Layers className="h-3.5 w-3.5 text-orange-400 shrink-0" />
-                <NumberInput
-                  integer
-                  min={1}
-                  max={50}
-                  className="h-9 w-24 text-sm font-mono bg-muted/50 border-border"
-                  value={maxMemory}
-                  placeholder="5"
-                  onCommit={(val) => { setMaxMemory(val); setDirty(true); }}
-                />
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Records kept before context compaction triggers
-              </p>
             </div>
           </div>
 

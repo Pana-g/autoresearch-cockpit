@@ -31,7 +31,6 @@ def _to_response(ch: NotificationChannel) -> ChannelResponse:
         channel_type=ch.channel_type,
         is_active=ch.is_active,
         notification_events=events,
-        commands_enabled=ch.commands_enabled,
         linked_run_id=ch.linked_run_id,
         created_at=ch.created_at,
         updated_at=ch.updated_at,
@@ -47,7 +46,6 @@ async def get_channel_types():
             name=info.name,
             label=info.label,
             config_fields=info.config_fields,
-            supports_commands=info.supports_commands,
         )
         for info in list_channel_types()
     ]
@@ -87,7 +85,6 @@ async def create_channel(body: ChannelCreate, db: AsyncSession = Depends(get_db)
         channel_type=body.channel_type,
         encrypted_config=encrypted,
         notification_events=json.dumps(body.notification_events),
-        commands_enabled=body.commands_enabled,
         linked_run_id=body.linked_run_id,
     )
     db.add(ch)
@@ -97,11 +94,6 @@ async def create_channel(body: ChannelCreate, db: AsyncSession = Depends(get_db)
         await db.rollback()
         raise HTTPException(409, f"Channel with name '{body.name}' already exists")
     await db.refresh(ch)
-
-    # Start command receiver if enabled
-    if ch.commands_enabled and ch.is_active:
-        from app.services.channel_manager import start_receiver
-        await start_receiver(ch.id, ch.channel_type, ch.encrypted_config)
 
     return _to_response(ch)
 
@@ -123,8 +115,6 @@ async def update_channel(
             if evt not in NOTIFICATION_EVENT_TYPES:
                 raise HTTPException(400, f"Unknown notification event type: {evt}")
         ch.notification_events = json.dumps(body.notification_events)
-    if body.commands_enabled is not None:
-        ch.commands_enabled = body.commands_enabled
     if body.is_active is not None:
         ch.is_active = body.is_active
     if "linked_run_id" in body.model_fields_set:
@@ -138,13 +128,6 @@ async def update_channel(
         raise HTTPException(409, f"Channel with name '{body.name}' already exists")
     await db.refresh(ch)
 
-    # Restart receiver if commands or config changed
-    from app.services.channel_manager import restart_receiver, stop_receiver
-    if ch.commands_enabled and ch.is_active:
-        await restart_receiver(ch.id, ch.channel_type, ch.encrypted_config)
-    else:
-        await stop_receiver(ch.id)
-
     return _to_response(ch)
 
 
@@ -153,10 +136,6 @@ async def delete_channel(channel_id: str, db: AsyncSession = Depends(get_db)):
     ch = await db.get(NotificationChannel, channel_id)
     if ch is None:
         raise HTTPException(404, "Channel not found")
-
-    # Stop receiver first
-    from app.services.channel_manager import stop_receiver
-    await stop_receiver(ch.id)
 
     await db.delete(ch)
     await db.commit()

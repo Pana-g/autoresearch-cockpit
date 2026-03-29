@@ -23,9 +23,12 @@ class Project(Base, TimestampMixin):
     default_overfit_floor: Mapped[float | None] = mapped_column(Float, nullable=True)
     default_overfit_margin: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    default_include_machine_info: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    default_max_consecutive_failures: Mapped[int] = mapped_column(Integer, default=6, server_default="6")
+
     # Default context compaction settings
     default_auto_compact: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
-    default_compact_threshold_pct: Mapped[int] = mapped_column(Integer, default=50, server_default="50")
+    default_compact_threshold_pct: Mapped[int] = mapped_column(Integer, default=75, server_default="75")
     default_context_limit: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     runs: Mapped[list["Run"]] = relationship(back_populates="project", lazy="raise", cascade="all, delete-orphan", passive_deletes=True, foreign_keys="[Run.project_id]")  # noqa: F821

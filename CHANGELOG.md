@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-03-29
+
+### Added
+
+- **Hardware info toggle** — per-run `include_machine_info` switch to control whether machine specs are sent to the LLM; configurable default in project settings
+- **Consecutive failure threshold** — configurable `max_consecutive_failures` limit (default 6) that auto-stops a run after too many back-to-back failures; available per-run and as a project default
+- **Auto-compact toggle at run creation** — `auto_compact` is now configurable when creating a new run, alongside the existing cockpit and project-level controls
+
+### Changed
+
+- **Training timeout** — replaced watchdog-based timeout logic with a simple 30-minute `asyncio.wait_for` to avoid killing long-running evaluation phases
+- **Connection error handling** — LLM provider calls now retry with exponential backoff and roll back the iteration on persistent failures; runs fast-fail after 5 consecutive connection errors
+- **Default compaction threshold** — changed from 50% to 75%
+- **Channel actions UI** — replaced icon-only hover buttons with an always-visible vertical "More" dropdown menu with text labels
+
+### Fixed
+
+- **Channel edit overlap** — editing a channel no longer shows a duplicate card below the edit form
+
+### Removed
+
+- **`max_run_memory_records`** — removed unused compaction trigger from settings, schemas, and UI
+- **Channel commands** — removed all command/receiver infrastructure (Discord bot receiver, Telegram receiver, command handler, channel manager) and `commands_enabled` field; channels are now notification-only
+
 ## [0.3.0] - 2026-03-19
 
 ### Added
@@ -66,7 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database migrations** — Alembic-managed schema with full migration history
 - **Default project settings** — configurable defaults for run parameters and compaction settings
 
-[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Pana-g/autoresearch-cockpit/releases/tag/v0.1.0

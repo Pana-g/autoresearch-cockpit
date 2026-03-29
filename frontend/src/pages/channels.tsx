@@ -14,6 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "@/lib/format";
 import {
   Plus,
@@ -28,10 +34,11 @@ import {
   Globe,
   TestTube,
   Power,
-  Terminal,
   HelpCircle,
   ExternalLink,
   X,
+  MoreVertical,
+  Pencil,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -67,7 +74,6 @@ const SETUP_GUIDES: Record<string, { title: string; steps: string[]; link?: { la
       "Click the gear icon (Edit Channel) → Integrations → Webhooks.",
       "Click \"New Webhook\", give it a name, and copy the Webhook URL.",
       "Paste the URL in the \"Webhook URL\" field below.",
-      "For bot commands: invite a Discord bot to your server and configure its token (advanced).",
     ],
     link: { label: "Discord Webhooks Docs", url: "https://support.discord.com/hc/en-us/articles/228383668" },
   },
@@ -140,7 +146,6 @@ export default function ChannelsPage() {
   const [channelType, setChannelType] = useState("");
   const [config, setConfig] = useState<Record<string, string>>({});
   const [selectedEvents, setSelectedEvents] = useState<NotificationEventType[]>(DEFAULT_EVENTS);
-  const [commandsEnabled, setCommandsEnabled] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [validating, setValidating] = useState<Record<string, boolean>>({});
   const [testing, setTesting] = useState<Record<string, boolean>>({});
@@ -153,7 +158,6 @@ export default function ChannelsPage() {
     setChannelType("");
     setConfig({});
     setSelectedEvents(DEFAULT_EVENTS);
-    setCommandsEnabled(false);
     setEditChannel(null);
   };
 
@@ -162,7 +166,6 @@ export default function ChannelsPage() {
     setName(ch.name);
     setChannelType(ch.channel_type);
     setSelectedEvents(ch.notification_events);
-    setCommandsEnabled(ch.commands_enabled);
     setConfig({});
     setShowCreate(true);
   };
@@ -186,7 +189,6 @@ export default function ChannelsPage() {
         id: editChannel.id,
         name,
         notification_events: selectedEvents,
-        commands_enabled: commandsEnabled,
       };
       if (Object.keys(config).length > 0) {
         body.config = config;
@@ -206,7 +208,6 @@ export default function ChannelsPage() {
           channel_type: channelType,
           config,
           notification_events: selectedEvents,
-          commands_enabled: commandsEnabled,
         },
         {
           onSuccess: async (ch) => {
@@ -446,26 +447,6 @@ export default function ChannelsPage() {
                 </div>
               )}
 
-              {/* Commands toggle */}
-              {(currentTypeInfo?.supports_commands || editChannel) && (
-                <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/50 border border-border">
-                  <div className="flex items-center gap-2">
-                    <Terminal className="h-4 w-4 text-primary/60" />
-                    <div>
-                      <span className="text-xs font-medium block">Remote Commands</span>
-                      <span className="text-[11px] text-muted-foreground block">
-                        Control runs via /status, /continue, /cancel, etc.
-                      </span>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={commandsEnabled}
-                    onCheckedChange={setCommandsEnabled}
-                    className="scale-75"
-                  />
-                </div>
-              )}
-
               {/* Actions */}
               <div className="flex justify-end gap-2 pt-2">
                 <Button
@@ -509,6 +490,8 @@ export default function ChannelsPage() {
       )}
 
       {Array.from(grouped.entries()).map(([type, channels]) => {
+        const visible = channels.filter((ch) => ch.id !== editChannel?.id);
+        if (visible.length === 0) return null;
         const Icon = CHANNEL_ICONS[type] ?? Globe;
         const color = CHANNEL_COLORS[type] ?? "text-muted-foreground";
         const desc = CHANNEL_DESCRIPTIONS[type] ?? type;
@@ -527,7 +510,7 @@ export default function ChannelsPage() {
             </div>
 
             <div className="space-y-2">
-              {channels.map((ch) => (
+              {visible.map((ch) => (
                 <motion.div
                   key={ch.id}
                   layout
@@ -546,11 +529,6 @@ export default function ChannelsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{ch.name}</span>
-                      {ch.commands_enabled && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">
-                          commands
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {ch.notification_events.map((evt) => (
@@ -568,63 +546,61 @@ export default function ChannelsPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-                      title="Validate connection"
-                      onClick={() => handleValidate(ch.id)}
-                      disabled={validating[ch.id]}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                     >
-                      {validating[ch.id] ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <CheckCircle className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-                      title="Send test notification"
-                      onClick={() => handleTest(ch.id)}
-                      disabled={testing[ch.id]}
-                    >
-                      {testing[ch.id] ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <TestTube className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-amber-400"
-                      title={ch.is_active ? "Disable" : "Enable"}
-                      onClick={() => handleToggleActive(ch)}
-                    >
-                      <Power className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                      title="Edit"
-                      onClick={() => openEdit(ch)}
-                    >
-                      <Bell className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
-                      title="Delete"
-                      onClick={() => setDeleteId(ch.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                      <MoreVertical className="h-4 w-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
+                      <DropdownMenuItem
+                        className="gap-2 cursor-pointer"
+                        disabled={validating[ch.id]}
+                        onClick={() => handleValidate(ch.id)}
+                      >
+                        {validating[ch.id] ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4" />
+                        )}
+                        Validate connection
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="gap-2 cursor-pointer"
+                        disabled={testing[ch.id]}
+                        onClick={() => handleTest(ch.id)}
+                      >
+                        {testing[ch.id] ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <TestTube className="h-4 w-4" />
+                        )}
+                        Send test notification
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="gap-2 cursor-pointer"
+                        onClick={() => handleToggleActive(ch)}
+                      >
+                        <Power className="h-4 w-4" />
+                        {ch.is_active ? "Disable" : "Enable"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="gap-2 cursor-pointer"
+                        onClick={() => openEdit(ch)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        className="gap-2 cursor-pointer"
+                        onClick={() => setDeleteId(ch.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </motion.div>
               ))}
             </div>

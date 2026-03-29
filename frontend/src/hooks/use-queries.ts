@@ -29,6 +29,15 @@ export function useDeleteProject() {
   });
 }
 
+export function useBrowseDirs(path: string) {
+  return useQuery({
+    queryKey: ["browse-dirs", path],
+    queryFn: () => projects.browseDirs(path),
+    enabled: path.length > 0,
+    staleTime: 30_000,
+  });
+}
+
 export function useSetProjectBest(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -49,6 +58,8 @@ export function useUpdateProjectSettings(projectId: string) {
       default_max_iterations?: number;
       default_overfit_floor?: number | null;
       default_overfit_margin?: number | null;
+      default_include_machine_info?: boolean;
+      default_max_consecutive_failures?: number;
       default_auto_compact?: boolean;
       default_compact_threshold_pct?: number;
       default_context_limit?: number;
@@ -95,7 +106,7 @@ export function useRun(projectId: string, runId: string) {
 export function useCreateRun() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ projectId, ...body }: { projectId: string; provider: string; model: string; credential_id?: string; max_iterations?: number }) =>
+    mutationFn: ({ projectId, ...body }: { projectId: string; provider: string; model: string; credential_id?: string; max_iterations?: number; include_machine_info?: boolean; auto_compact?: boolean; max_consecutive_failures?: number }) =>
       runs.create(projectId, body),
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["runs", vars.projectId] }),
   });
@@ -114,7 +125,7 @@ export function useRunAction(projectId: string, runId: string) {
 export function useUpdateRunSettings(projectId: string, runId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (settings: { auto_approve?: boolean; auto_continue?: boolean; max_iterations?: number; stop_requested?: boolean; provider?: string; model?: string; credential_id?: string; overfit_floor?: number | null; overfit_margin?: number | null; auto_compact?: boolean; compact_threshold_pct?: number; context_limit?: number }) =>
+    mutationFn: (settings: { auto_approve?: boolean; auto_continue?: boolean; max_iterations?: number; stop_requested?: boolean; provider?: string; model?: string; credential_id?: string; overfit_floor?: number | null; overfit_margin?: number | null; include_machine_info?: boolean; auto_compact?: boolean; compact_threshold_pct?: number; context_limit?: number; max_consecutive_failures?: number }) =>
       runs.updateSettings(projectId, runId, settings),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["runs", projectId, runId] });
@@ -384,7 +395,6 @@ export function useUpdateChannel() {
       name?: string;
       config?: Record<string, string>;
       notification_events?: NotificationEventType[];
-      commands_enabled?: boolean;
       is_active?: boolean;
       linked_run_id?: string | null;
     }) => channels.update(id, body),

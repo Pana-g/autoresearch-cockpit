@@ -41,6 +41,8 @@ export interface Project {
   default_max_iterations: number;
   default_overfit_floor: number | null;
   default_overfit_margin: number | null;
+  default_include_machine_info: boolean;
+  default_max_consecutive_failures: number;
   default_auto_compact: boolean;
   default_compact_threshold_pct: number;
   default_context_limit: number;
@@ -67,6 +69,10 @@ export interface Run {
   compact_threshold_pct: number;
   context_limit: number;
   compacted_up_to: number | null;
+  error_message: string | null;
+  machine_info: string | null;
+  include_machine_info: boolean;
+  max_consecutive_failures: number;
   created_at: string;
   updated_at: string;
 }
@@ -201,7 +207,8 @@ export type SSEEventType =
   | "run_canceled"
   | "checkpoint_restored"
   | "compaction_needed"
-  | "compaction_done";
+  | "compaction_done"
+  | "machine_assessment";
 
 export interface SSEMessage {
   event: SSEEventType;
@@ -229,7 +236,6 @@ export interface ChannelTypeInfo {
     required: boolean;
     placeholder: string;
   }[];
-  supports_commands: boolean;
 }
 
 export interface NotificationChannel {
@@ -238,7 +244,6 @@ export interface NotificationChannel {
   channel_type: string;
   is_active: boolean;
   notification_events: NotificationEventType[];
-  commands_enabled: boolean;
   linked_run_id: string | null;
   created_at: string;
   updated_at: string;

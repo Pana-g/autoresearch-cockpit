@@ -1,9 +1,10 @@
 """Project endpoints."""
 
 import asyncio
+import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +15,37 @@ from app.schemas import ProjectCreate, ProjectResponse, ProjectSettingsUpdate, S
 from app.services.git_service import GitService
 
 router = APIRouter(prefix="/projects", tags=["projects"])
+
+
+@router.get("/browse-dirs")
+async def browse_directories(path: str = Query("~")):
+    """List directories under the given path for autocomplete."""
+    resolved = Path(os.path.expanduser(path)).resolve()
+    if not resolved.is_dir():
+        # Try the parent if the path is a partial name
+        parent = resolved.parent
+        prefix = resolved.name.lower()
+        if not parent.is_dir():
+            return {"dirs": [], "base": str(resolved)}
+        try:
+            dirs = sorted(
+                str(parent / e.name)
+                for e in os.scandir(str(parent))
+                if e.is_dir() and e.name.lower().startswith(prefix)
+            )
+        except PermissionError:
+            dirs = []
+        return {"dirs": dirs[:50], "base": str(parent)}
+
+    try:
+        dirs = sorted(
+            str(resolved / e.name)
+            for e in os.scandir(str(resolved))
+            if e.is_dir()
+        )
+    except PermissionError:
+        dirs = []
+    return {"dirs": dirs[:50], "base": str(resolved)}
 
 
 @router.get("", response_model=list[ProjectResponse])
@@ -63,7 +95,7 @@ async def update_project_settings(project_id: str, body: ProjectSettingsUpdate, 
     project = await db.get(Project, project_id)
     if project is None:
         raise HTTPException(404, "Project not found")
-    for field in ("default_auto_approve", "default_auto_continue", "default_max_iterations", "default_auto_compact", "default_compact_threshold_pct", "default_context_limit"):
+    for field in ("default_auto_approve", "default_auto_continue", "default_max_iterations", "default_include_machine_info", "default_auto_compact", "default_compact_threshold_pct", "default_context_limit"):
         val = getattr(body, field)
         if val is not None:
             setattr(project, field, val)

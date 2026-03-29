@@ -25,8 +25,10 @@ class ProjectResponse(BaseModel):
     default_max_iterations: int = 0
     default_overfit_floor: float | None = None
     default_overfit_margin: float | None = None
+    default_include_machine_info: bool = True
+    default_max_consecutive_failures: int = 6
     default_auto_compact: bool = True
-    default_compact_threshold_pct: int = 50
+    default_compact_threshold_pct: int = 75
     default_context_limit: int = 0
     created_at: datetime
     updated_at: datetime
@@ -40,6 +42,8 @@ class ProjectSettingsUpdate(BaseModel):
     default_max_iterations: int | None = None
     default_overfit_floor: float | None = Field(None)
     default_overfit_margin: float | None = Field(None)
+    default_include_machine_info: bool | None = None
+    default_max_consecutive_failures: int | None = None
     default_auto_compact: bool | None = None
     default_compact_threshold_pct: int | None = None
     default_context_limit: int | None = None
@@ -59,6 +63,9 @@ class RunCreate(BaseModel):
     max_iterations: int | None = None
     overfit_floor: float | None = Field(None)
     overfit_margin: float | None = Field(None)
+    include_machine_info: bool | None = None  # None = use project default
+    max_consecutive_failures: int | None = None  # None = use project default
+    auto_compact: bool | None = None  # None = use project default
 
 
 class RunResponse(BaseModel):
@@ -77,9 +84,13 @@ class RunResponse(BaseModel):
     overfit_floor: float | None = None
     overfit_margin: float | None = None
     auto_compact: bool = True
-    compact_threshold_pct: int = 50
+    compact_threshold_pct: int = 75
     context_limit: int = 0
     compacted_up_to: int | None = None
+    error_message: str | None = None
+    machine_info: str | None = None
+    include_machine_info: bool = True
+    max_consecutive_failures: int = 6
     created_at: datetime
     updated_at: datetime
 
@@ -93,6 +104,8 @@ class RunSettingsUpdate(BaseModel):
     stop_requested: bool | None = None
     overfit_floor: float | None = Field(None)
     overfit_margin: float | None = Field(None)
+    include_machine_info: bool | None = None
+    max_consecutive_failures: int | None = None
     provider: str | None = None
     model: str | None = None
     credential_id: str | None = None
@@ -255,7 +268,7 @@ class CompactionResponse(BaseModel):
     preview_up_to: int | None = None
     memory_count: int = 0
     auto_compact: bool = True
-    compact_threshold_pct: int = 50
+    compact_threshold_pct: int = 75
     context_limit: int = 0
 
 
@@ -288,7 +301,6 @@ class ChannelTypeInfoResponse(BaseModel):
     name: str
     label: str
     config_fields: list[dict] = Field(default_factory=list)
-    supports_commands: bool = False
 
 
 class ChannelCreate(BaseModel):
@@ -298,7 +310,6 @@ class ChannelCreate(BaseModel):
     notification_events: list[str] = Field(
         default=["new_best", "training_failed", "run_completed", "run_failed"]
     )
-    commands_enabled: bool = False
     linked_run_id: str | None = None
 
 
@@ -306,7 +317,6 @@ class ChannelUpdate(BaseModel):
     name: str | None = None
     config: dict | None = None
     notification_events: list[str] | None = None
-    commands_enabled: bool | None = None
     is_active: bool | None = None
     linked_run_id: str | None = None
 
@@ -317,7 +327,6 @@ class ChannelResponse(BaseModel):
     channel_type: str
     is_active: bool
     notification_events: list[str] = Field(default_factory=list)
-    commands_enabled: bool
     linked_run_id: str | None = None
     created_at: datetime
     updated_at: datetime
