@@ -7,7 +7,7 @@ interface ThemeState {
   setTheme: (t: Theme) => void;
 }
 
-function getEffectiveTheme(theme: Theme): "light" | "dark" {
+export function getEffectiveTheme(theme: Theme): "light" | "dark" {
   if (theme === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }

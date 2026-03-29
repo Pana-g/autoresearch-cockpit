@@ -2,7 +2,7 @@ import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { TokenDisplay } from "@/components/token-display";
 import { Check, X, Pencil, GitCommit } from "lucide-react";
-import { useThemeStore } from "@/stores/theme-store";
+import { useThemeStore, getEffectiveTheme } from "@/stores/theme-store";
 import type { AgentStep } from "@/lib/types";
 
 const ReactDiffViewer = lazy(() => import("react-diff-viewer-continued"));
@@ -20,7 +20,7 @@ interface Props {
 export function PatchReview({ step, originalCode, onApprove, onReject, onEdit, tokenUsage }: Props) {
   const [editing, setEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(step.patch ?? "");
-  const isDark = useThemeStore((s) => s.theme === "dark" || (s.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches));
+  const isDark = useThemeStore((s) => getEffectiveTheme(s.theme) === "dark");
 
   const patchedCode = step.patch ?? "";
 

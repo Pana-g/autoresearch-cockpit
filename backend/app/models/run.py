@@ -20,26 +20,26 @@ class Run(Base, TimestampMixin):
     credential_id: Mapped[str | None] = mapped_column(
         ForeignKey("provider_credentials.id"), nullable=True
     )
-    auto_approve: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
-    auto_continue: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    auto_approve: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    auto_continue: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     max_iterations: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # 0 = unlimited
-    stop_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    stop_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     overfit_floor: Mapped[float | None] = mapped_column(Float, nullable=True)  # val_bpb below this = overfitting
     overfit_margin: Mapped[float | None] = mapped_column(Float, nullable=True)  # stop when val_bpb within this distance above floor
     pending_restart_from: Mapped[int | None] = mapped_column(Integer, nullable=True)  # set by checkpoint restart, consumed by wake_agent
     config_json: Mapped[str] = mapped_column(Text, default="{}")  # extra run config
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)  # reason for failure
     machine_info: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON machine hardware profile
-    include_machine_info: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")  # send hardware profile to agent
+    include_machine_info: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")  # send hardware profile to agent
     max_consecutive_failures: Mapped[int] = mapped_column(Integer, default=6, server_default="6")  # 0 = unlimited, fail run after this many consecutive failed iterations
 
     # Context compaction settings
-    auto_compact: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    auto_compact: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     compact_threshold_pct: Mapped[int] = mapped_column(Integer, default=75, server_default="75")  # % of context window
     context_limit: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # 0 = auto-detect from model
     compacted_summary: Mapped[str | None] = mapped_column(Text, nullable=True)  # compacted memory text
     compacted_up_to: Mapped[int | None] = mapped_column(Integer, nullable=True)  # iteration up to which records are compacted
-    compacting: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")  # True while compaction is in progress
+    compacting: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")  # True while compaction is in progress
 
     project: Mapped["Project"] = relationship(back_populates="runs", lazy="selectin", foreign_keys=[project_id])  # noqa: F821
     workspace: Mapped["Workspace | None"] = relationship(  # noqa: F821

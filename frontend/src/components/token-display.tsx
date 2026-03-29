@@ -1,5 +1,3 @@
-import { formatDistanceToNow } from "@/lib/format";
-
 export function TokenDisplay({ prompt, completion, cost, source }: {
   prompt: number;
   completion: number;
@@ -26,10 +24,6 @@ export function TokenDisplay({ prompt, completion, cost, source }: {
       )}
     </div>
   );
-}
-
-export function TimeAgo({ date }: { date: string }) {
-  return <span className="text-[11px] text-muted-foreground font-mono">{formatDistanceToNow(date)}</span>;
 }
 
 function formatNumber(n: number): string {

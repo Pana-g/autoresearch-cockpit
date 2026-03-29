@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-03-29
+
+### Changed
+
+- **SQLite by default** — switched the default database from PostgreSQL to SQLite; the app creates a local `data/autoresearch.db` on first run with zero configuration. PostgreSQL remains fully supported via `AR_DATABASE_URL`
+- **Zero-dependency setup** — removed Docker and PostgreSQL as prerequisites; `setup.sh` / `setup.bat` now only require Python, uv, and bun
+- **Simplified run/setup scripts** — removed Docker daemon checks, Colima startup, PostgreSQL health polling, and API key generation from all shell and batch scripts
+- **Auto-derived sync URL** — removed the `AR_DATABASE_URL_SYNC` environment variable; the synchronous connection string is now derived automatically from `AR_DATABASE_URL`
+
+### Fixed
+
+- **SQLite boolean defaults** — model `server_default` values changed from `"true"`/`"false"` to `"1"`/`"0"` for cross-dialect compatibility
+- **Alembic batch mode** — enabled `render_as_batch=True` for SQLite to handle `ALTER TABLE` limitations
+- **Project settings bug** — `default_max_consecutive_failures` was not persisted when updated from project settings
+- **State machine tests** — updated to match current transition rules (DONE/FAILED/CANCELED allow recovery transitions)
+- **Unsafe error casts** — replaced `(error as Error).message` with safe `instanceof` checks across all error displays
+
+### Removed
+
+- **Docker prerequisite** — Docker/Docker Compose are no longer required for local development or the standalone binary
+- **`AR_DATABASE_URL_SYNC`** — replaced by auto-derivation from the async URL
+- **Unused `Artifact` model** — removed from exports (table kept for migration compatibility)
+- **Unused API functions** — removed `runs.rollback()` and `runs.getTrainPy()` from frontend API client
+- **Dead code** — removed unused imports (`time`, `update`, `asyncio`, `useMemo`) and unused `TimeAgo` component
+- **`__import__()` hack** — replaced obfuscated dynamic import in notification service with normal import
+
+### Changed (Code Quality)
+
+- **Consolidated theme resolution** — exported `getEffectiveTheme()` from theme store; replaced 3 duplicated inline implementations
+- **Simplified run settings update** — replaced 14 individual if-statements with a loop for simple fields
+- **Moved inline imports to module level** — compaction and prompt builder imports in `runs.py` moved to top of file
+- **FastAPI version string** — updated from `0.1.0` to `0.5.0`
+
 ## [0.4.0] - 2026-03-29
 
 ### Added
@@ -17,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **SQLite by default** — the app now uses a local SQLite database out of the box; no PostgreSQL setup required. Just download and run. PostgreSQL remains supported via `AR_DATABASE_URL`
 - **Training timeout** — replaced watchdog-based timeout logic with a simple 30-minute `asyncio.wait_for` to avoid killing long-running evaluation phases
 - **Connection error handling** — LLM provider calls now retry with exponential backoff and roll back the iteration on persistent failures; runs fast-fail after 5 consecutive connection errors
 - **Default compaction threshold** — changed from 50% to 75%

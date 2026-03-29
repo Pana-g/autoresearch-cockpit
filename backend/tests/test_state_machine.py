@@ -50,9 +50,7 @@ class TestInvalidTransitions:
             (RunState.IDLE, RunState.AGENT_RUNNING),
             (RunState.IDLE, RunState.TRAINING_RUNNING),
             (RunState.DONE, RunState.IDLE),
-            (RunState.DONE, RunState.AWAITING_AGENT),
             (RunState.FAILED, RunState.IDLE),
-            (RunState.CANCELED, RunState.AWAITING_AGENT),
             (RunState.TRAINING_RUNNING, RunState.IDLE),
             (RunState.AGENT_RUNNING, RunState.TRAINING_RUNNING),
             (RunState.PREPARING, RunState.DONE),
@@ -65,13 +63,35 @@ class TestInvalidTransitions:
 
 
 class TestTerminalStates:
-    """Terminal states (DONE, FAILED, CANCELED) have no outgoing transitions."""
+    """States DONE, FAILED, CANCELED only allow specific recovery transitions."""
 
-    @pytest.mark.parametrize("terminal", [RunState.DONE, RunState.FAILED, RunState.CANCELED])
-    def test_terminal_state_has_no_transitions(self, terminal):
+    def test_done_only_allows_awaiting_agent(self):
+        """DONE allows force_continue (→ AWAITING_AGENT) but nothing else."""
+        validate_transition(RunState.DONE, RunState.AWAITING_AGENT)  # should not raise
         for target in RunState:
+            if target == RunState.AWAITING_AGENT:
+                continue
             with pytest.raises(InvalidTransitionError):
-                validate_transition(terminal, target)
+                validate_transition(RunState.DONE, target)
+
+    def test_failed_only_allows_preparing_or_awaiting_agent(self):
+        """FAILED allows retry (→ PREPARING, AWAITING_AGENT) but nothing else."""
+        validate_transition(RunState.FAILED, RunState.PREPARING)
+        validate_transition(RunState.FAILED, RunState.AWAITING_AGENT)
+        for target in RunState:
+            if target in (RunState.PREPARING, RunState.AWAITING_AGENT):
+                continue
+            with pytest.raises(InvalidTransitionError):
+                validate_transition(RunState.FAILED, target)
+
+    def test_canceled_only_allows_awaiting_agent(self):
+        """CANCELED allows force_continue (→ AWAITING_AGENT) but nothing else."""
+        validate_transition(RunState.CANCELED, RunState.AWAITING_AGENT)
+        for target in RunState:
+            if target == RunState.AWAITING_AGENT:
+                continue
+            with pytest.raises(InvalidTransitionError):
+                validate_transition(RunState.CANCELED, target)
 
 
 class TestRunStateEnum:

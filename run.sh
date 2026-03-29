@@ -16,51 +16,19 @@ if [[ -f "$ROOT/backend/.env" ]]; then
   set +a
 fi
 
-# ── Ensure Docker / Postgres ─────────────────────────────
+# ── Ensure database is ready ─────────────────────────────
 ensure_db() {
-  if ! docker info &>/dev/null 2>&1; then
-    if command -v colima &>/dev/null; then
-      echo "⟳  Starting Colima..."
-      colima start
-    else
-      echo "❌  Docker daemon not running. Run ./setup.sh first."
-      exit 1
-    fi
-  fi
-
-  if ! docker compose ps db --status running 2>/dev/null | grep -q db; then
-    echo "⟳  Starting PostgreSQL..."
-    docker compose up db -d
-    for i in {1..30}; do
-      docker compose exec db pg_isready -U postgres &>/dev/null && break
-      sleep 1
-    done
-  fi
-  echo "✓  PostgreSQL running"
-
   cd "$ROOT/backend"
-  uv run alembic upgrade head 2>&1 | grep -v "^$" | head -3
-  echo "✓  Database up to date"
-  cd "$ROOT"
-}
-
-# ── API key handling ─────────────────────────────────────
-ensure_api_key() {
-  if [[ -z "${AR_API_KEY:-}" ]]; then
-    AR_API_KEY="$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")"
-    export AR_API_KEY
-    # Persist to .env so it survives restarts
-    echo "AR_API_KEY=$AR_API_KEY" >> "$ROOT/backend/.env"
-    echo "⟳  No AR_API_KEY found — generated and saved to backend/.env"
+  # For SQLite (default): the server auto-creates the DB on first run.
+  # For PostgreSQL: ensure Alembic migrations are applied.
+  if echo "${AR_DATABASE_URL:-}" | grep -q "^postgresql"; then
+    echo "⟳  Running database migrations (PostgreSQL)..."
+    uv run alembic upgrade head 2>&1 | grep -v "^$" | head -3
+    echo "✓  Database up to date"
+  else
+    echo "✓  Using SQLite (auto-created on first run)"
   fi
-  echo ""
-  echo "  ┌──────────────────────────────────────────┐"
-  echo "  │  🔑 API Key (use in frontend Servers UI) │"
-  echo "  │                                          │"
-  echo "  │  $AR_API_KEY"
-  echo "  │                                          │"
-  echo "  └──────────────────────────────────────────┘"
-  echo ""
+  cd "$ROOT"
 }
 
 # ── Commands ─────────────────────────────────────────────
@@ -72,7 +40,6 @@ case "$CMD" in
     echo "  AutoResearch Cockpit — Backend"
     echo "══════════════════════════════════════════════"
     ensure_db
-    ensure_api_key
     cd "$ROOT/backend"
     echo "⟳  Starting backend on :8000..."
     exec uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -102,7 +69,6 @@ case "$CMD" in
     trap cleanup EXIT INT TERM
 
     ensure_db
-    ensure_api_key
 
     # Start backend
     cd "$ROOT/backend"

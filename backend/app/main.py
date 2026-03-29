@@ -19,6 +19,27 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ensure SQLite database directory exists
+    if settings.is_sqlite:
+        db_path = settings.database_url.split("///", 1)[-1]
+        db_dir = Path(db_path).parent
+        db_dir.mkdir(parents=True, exist_ok=True)
+
+    # Run Alembic migrations (or create fresh SQLite DB)
+    from app.models.base import Base
+    from app.db import engine
+
+    if settings.is_sqlite and not Path(settings.database_url.split("///", 1)[-1]).exists():
+        # Fresh SQLite: create all tables and stamp Alembic head
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        _stamp_alembic_head()
+        logger.info("Created fresh SQLite database")
+    else:
+        # Existing DB (SQLite or PostgreSQL): run Alembic migrations
+        _run_alembic_upgrade()
+        logger.info("Database migrations applied")
+
     # Startup
     await recover_stuck_runs()
 
@@ -32,9 +53,27 @@ async def lifespan(app: FastAPI):
     await notification_service.stop()
 
 
+def _stamp_alembic_head() -> None:
+    from alembic.config import Config
+    from alembic import command
+
+    alembic_cfg = Config(str(Path(__file__).resolve().parent.parent / "alembic.ini"))
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url_sync)
+    command.stamp(alembic_cfg, "head")
+
+
+def _run_alembic_upgrade() -> None:
+    from alembic.config import Config
+    from alembic import command
+
+    alembic_cfg = Config(str(Path(__file__).resolve().parent.parent / "alembic.ini"))
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url_sync)
+    command.upgrade(alembic_cfg, "head")
+
+
 app = FastAPI(
     title="AutoResearch Cockpit",
-    version="0.1.0",
+    version="0.5.0",
     description="Control plane for karpathy/autoresearch",
     lifespan=lifespan,
 )

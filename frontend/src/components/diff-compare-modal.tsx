@@ -1,7 +1,7 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useThemeStore } from "@/stores/theme-store";
+import { useThemeStore, getEffectiveTheme } from "@/stores/theme-store";
 import { runs } from "@/lib/api";
 import type { AgentStep, TrainingStep } from "@/lib/types";
 import { GitCompareArrows, ChevronDown, TrendingUp, TrendingDown, Minus, X, Loader2 } from "lucide-react";
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function DiffCompareModal({ open, onClose, projectId, runId }: Props) {
-  const isDark = useThemeStore((s) => s.theme === "dark" || (s.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches));
+  const isDark = useThemeStore((s) => getEffectiveTheme(s.theme) === "dark");
 
   // Fetch ALL agent steps and training steps when the modal is open
   const { data: agentSteps = [], isLoading: loadingAgent } = useQuery({

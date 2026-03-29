@@ -173,7 +173,7 @@ export default function ProjectsPage() {
                 <Button size="sm" variant="ghost" onClick={() => setShowCreate(false)} className="text-muted-foreground">Cancel</Button>
               </div>
               {createProject.isError && (
-                <p className="text-xs text-red-400">{(createProject.error as Error).message}</p>
+                <p className="text-xs text-red-400">{createProject.error instanceof Error ? createProject.error.message : "An error occurred"}</p>
               )}
             </div>
           </motion.div>

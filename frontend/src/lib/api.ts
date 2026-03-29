@@ -96,10 +96,6 @@ export const runs = {
     request<{ iteration: number; val_bpb: number | null; improved: boolean | null; status: string }[]>(`/projects/${projectId}/runs/${runId}/chart-data`),
   gitLog: (projectId: string, runId: string) =>
     request<GitLogEntry[]>(`/projects/${projectId}/runs/${runId}/git-log`),
-  rollback: (projectId: string, runId: string, commitSha: string) =>
-    request<{ status: string }>(`/projects/${projectId}/runs/${runId}/rollback?commit_sha=${encodeURIComponent(commitSha)}`, {
-      method: "POST",
-    }),
   checkpointRestart: (projectId: string, runId: string, iteration: number, resetTrainPy: boolean = false) =>
     request<{ status: string; iteration: number; best_val_bpb: number | null; commit_sha: string }>(
       `/projects/${projectId}/runs/${runId}/checkpoint-restart`,
@@ -112,8 +108,6 @@ export const runs = {
       method: "PUT",
       body: JSON.stringify({ content }),
     }),
-  getTrainPy: (projectId: string, runId: string) =>
-    request<{ content: string }>(`/projects/${projectId}/runs/${runId}/train-py`),
   updateTrainPy: (projectId: string, runId: string, content: string) =>
     request<{ status: string }>(`/projects/${projectId}/runs/${runId}/train-py`, {
       method: "PUT",

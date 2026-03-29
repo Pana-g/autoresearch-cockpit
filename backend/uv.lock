@@ -126,19 +126,18 @@ wheels = [
 
 [[package]]
 name = "autoresearch-cockpit"
-version = "0.4.0"
+version = "0.5.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aiosqlite" },
     { name = "alembic" },
     { name = "anthropic" },
-    { name = "asyncpg" },
     { name = "cryptography" },
     { name = "fastapi" },
     { name = "gitpython" },
     { name = "google-genai" },
     { name = "httpx" },
     { name = "openai" },
-    { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-multipart" },
@@ -159,13 +158,18 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
+postgres = [
+    { name = "asyncpg" },
+    { name = "psycopg2-binary" },
+]
 
 [package.metadata]
 requires-dist = [
+    { name = "aiosqlite", specifier = ">=0.20" },
     { name = "aiosqlite", marker = "extra == 'dev'", specifier = ">=0.20" },
     { name = "alembic", specifier = ">=1.14" },
     { name = "anthropic", specifier = ">=0.42" },
-    { name = "asyncpg", specifier = ">=0.30" },
+    { name = "asyncpg", marker = "extra == 'postgres'", specifier = ">=0.30" },
     { name = "cryptography", specifier = ">=44" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "gitpython", specifier = ">=3.1" },
@@ -173,7 +177,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
     { name = "openai", specifier = ">=1.60" },
-    { name = "psycopg2-binary", specifier = ">=2.9.11" },
+    { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = ">=2.9.11" },
     { name = "pydantic", specifier = ">=2.10" },
     { name = "pydantic-settings", specifier = ">=2.7" },
     { name = "pyinstaller", marker = "extra == 'build'", specifier = ">=6" },
@@ -186,7 +190,7 @@ requires-dist = [
     { name = "sse-starlette", specifier = ">=2.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32" },
 ]
-provides-extras = ["dev", "build"]
+provides-extras = ["postgres", "dev", "build"]
 
 [[package]]
 name = "certifi"

@@ -1,9 +1,9 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileText, Pencil, Eye, Copy, Check, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
-import { useThemeStore } from "@/stores/theme-store";
+import { useThemeStore, getEffectiveTheme } from "@/stores/theme-store";
 
 interface Props {
   open: boolean;
@@ -29,12 +29,7 @@ export function FilePreviewModal({ open, onClose, filename, content, onSave }: P
   const [copied, setCopied] = useState(false);
   const theme = useThemeStore((s) => s.theme);
 
-  const effectiveTheme = useMemo(() => {
-    if (theme === "system") {
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-    return theme;
-  }, [theme]);
+  const effectiveTheme = getEffectiveTheme(theme);
 
   const monacoTheme = effectiveTheme === "dark" ? "vs-dark" : "vs";
   const language = getLanguage(filename);

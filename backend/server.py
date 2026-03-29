@@ -2,7 +2,7 @@
 Standalone server entry point.
 
 Used by PyInstaller to create a self-contained executable that:
-  1. Runs Alembic database migrations
+  1. Creates or migrates the database (SQLite auto-created, PostgreSQL runs Alembic)
   2. Starts the FastAPI/uvicorn server (which also serves the bundled frontend)
 
 Usage:
@@ -32,8 +32,65 @@ def _base_dir() -> Path:
     return Path(__file__).resolve().parent
 
 
-def run_migrations(base: Path) -> None:
-    """Apply any pending Alembic migrations before the server starts."""
+def _init_database() -> None:
+    """Create or migrate the database.
+
+    For SQLite: if the DB file doesn't exist, create all tables directly
+    (faster and avoids Alembic SQLite quirks). If it exists, run Alembic.
+
+    For PostgreSQL: always run Alembic migrations.
+    """
+    from app.config import settings
+
+    if settings.is_sqlite:
+        # Resolve the DB file path from the URL: sqlite+aiosqlite:///path/to/db
+        db_path_str = settings.database_url.split("///", 1)[-1]
+        db_path = Path(db_path_str)
+
+        if not db_path.exists():
+            # First run — create everything from ORM models
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            logger.info("Creating new SQLite database at %s", db_path)
+
+            from sqlalchemy import create_engine
+
+            from app.models.base import Base
+            import app.models  # noqa: F401 — register all models
+
+            sync_url = settings.database_url_sync
+            engine = create_engine(sync_url)
+            Base.metadata.create_all(engine)
+            engine.dispose()
+
+            # Stamp Alembic version so future migrations work
+            try:
+                _stamp_alembic_head(_base_dir(), sync_url)
+            except Exception as exc:
+                logger.warning("Could not stamp Alembic version: %s", exc)
+
+            logger.info("Database created successfully")
+            return
+
+    # Existing DB (SQLite or PostgreSQL) — run Alembic migrations
+    _run_alembic_upgrade(_base_dir())
+
+
+def _stamp_alembic_head(base: Path, sync_url: str) -> None:
+    """Stamp the Alembic version table to 'head' without running migrations."""
+    from alembic import command
+    from alembic.config import Config
+
+    ini_path = base / "alembic.ini"
+    if not ini_path.exists():
+        return
+    cfg = Config(str(ini_path))
+    cfg.set_main_option("script_location", str(base / "alembic"))
+    cfg.set_main_option("sqlalchemy.url", sync_url)
+    command.stamp(cfg, "head")
+
+
+def _run_alembic_upgrade(base: Path) -> None:
+    """Apply any pending Alembic migrations."""
     try:
         from alembic import command
         from alembic.config import Config
@@ -44,13 +101,12 @@ def run_migrations(base: Path) -> None:
             return
 
         cfg = Config(str(ini_path))
-        # Override script_location to the absolute path so it works from any cwd
         cfg.set_main_option("script_location", str(base / "alembic"))
         command.upgrade(cfg, "head")
         logger.info("Database migrations applied successfully")
     except Exception as exc:
         logger.error("Migration failed: %s", exc)
-        logger.error("Make sure AR_DATABASE_URL_SYNC is set correctly in your .env file")
+        logger.error("If using PostgreSQL, make sure AR_DATABASE_URL is set correctly in your .env file")
         sys.exit(1)
 
 
@@ -85,7 +141,7 @@ def main() -> None:
         )
 
     if not args.no_migrate:
-        run_migrations(base)
+        _init_database()
 
     import uvicorn
 

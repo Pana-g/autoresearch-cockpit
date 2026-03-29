@@ -25,7 +25,6 @@ services:
       - ./backend/.env
     environment:
       AR_DATABASE_URL: "postgresql+asyncpg://postgres:postgres@db:5432/autoresearch"
-      AR_DATABASE_URL_SYNC: "postgresql://postgres:postgres@db:5432/autoresearch"
     depends_on:
       db:
         condition: service_healthy

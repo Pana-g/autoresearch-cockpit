@@ -1,6 +1,7 @@
 """Run endpoints — CRUD + control actions."""
 
 import asyncio
+import json as _json
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.models import AgentStep, Project, ProviderCredential, Run, RunMemory, RunNote, RunState, TrainingStep, Workspace
+from app.providers.registry import get_provider
 from app.schemas import (
     AgentStepResponse,
     CheckpointRestartRequest,
@@ -22,7 +24,16 @@ from app.schemas import (
     TrainingStepResponse,
 )
 from app.services import run_engine
+from app.services.compaction import (
+    build_compacted_summary,
+    check_compaction_needed,
+    estimate_tokens,
+    get_context_limit,
+    llm_compact,
+)
+from app.services.encryption import decrypt
 from app.services.git_service import GitService
+from app.services.prompt_builder import build_agent_prompt
 
 router = APIRouter(prefix="/projects/{project_id}/runs", tags=["runs"])
 
@@ -87,36 +98,21 @@ async def update_run_settings(
     run = await db.get(Run, run_id)
     if run is None or run.project_id != project_id:
         raise HTTPException(404, "Run not found")
-    if body.auto_approve is not None:
-        run.auto_approve = body.auto_approve
-    if body.auto_continue is not None:
-        run.auto_continue = body.auto_continue
-    if body.max_iterations is not None:
-        run.max_iterations = body.max_iterations
-    if body.stop_requested is not None:
-        run.stop_requested = body.stop_requested
-    if body.overfit_floor is not None:
-        run.overfit_floor = body.overfit_floor
-    elif "overfit_floor" in body.model_fields_set:
-        run.overfit_floor = None
-    if body.overfit_margin is not None:
-        run.overfit_margin = body.overfit_margin
-    elif "overfit_margin" in body.model_fields_set:
-        run.overfit_margin = None
-    if body.provider is not None:
-        run.provider = body.provider
-    if body.model is not None:
-        run.model = body.model
-    if body.credential_id is not None:
-        run.credential_id = body.credential_id
-    if body.auto_compact is not None:
-        run.auto_compact = body.auto_compact
-    if body.compact_threshold_pct is not None:
-        run.compact_threshold_pct = body.compact_threshold_pct
-    if body.context_limit is not None:
-        run.context_limit = body.context_limit
-    if body.max_consecutive_failures is not None:
-        run.max_consecutive_failures = body.max_consecutive_failures
+
+    # Simple fields: update if explicitly set
+    for field in (
+        "auto_approve", "auto_continue", "max_iterations", "stop_requested",
+        "provider", "model", "credential_id", "auto_compact",
+        "compact_threshold_pct", "context_limit", "max_consecutive_failures",
+    ):
+        value = getattr(body, field)
+        if value is not None:
+            setattr(run, field, value)
+
+    # Nullable float fields: distinguish "set to None" from "not provided"
+    for field in ("overfit_floor", "overfit_margin"):
+        if field in body.model_fields_set:
+            setattr(run, field, getattr(body, field))
     db.add(run)
     await db.commit()
     await db.refresh(run)
@@ -442,17 +438,6 @@ async def update_train_py(
 
 # ── Compaction ────────────────────────────────────────────
 
-from app.services.compaction import (
-    build_compacted_summary,
-    check_compaction_needed,
-    estimate_tokens,
-    get_context_limit,
-    llm_compact,
-)
-from app.providers.registry import get_provider
-from app.services.encryption import decrypt
-import json as _json
-
 
 @router.get("/{run_id}/compaction", response_model=CompactionResponse)
 async def get_compaction(
@@ -494,9 +479,6 @@ async def get_context_usage(
     project_id: str, run_id: str, db: AsyncSession = Depends(get_db)
 ):
     """Estimate current context window usage for this run."""
-    import json as _json
-    from app.services.prompt_builder import build_agent_prompt
-
     run = await db.get(Run, run_id)
     if run is None or run.project_id != project_id:
         raise HTTPException(404, "Run not found")
@@ -508,10 +490,8 @@ async def get_context_usage(
     program_md = ""
     train_py = ""
     if workspace:
-        from pathlib import Path as _Path
-
-        prog_path = _Path(workspace.workspace_path) / "program.md"
-        train_path = _Path(workspace.workspace_path) / "train.py"
+        prog_path = Path(workspace.workspace_path) / "program.md"
+        train_path = Path(workspace.workspace_path) / "train.py"
         if prog_path.exists():
             program_md = prog_path.read_text()
         if train_path.exists():

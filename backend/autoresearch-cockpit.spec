@@ -83,12 +83,10 @@ a = Analysis(
         "uvicorn.lifespan.off",
         "uvicorn.lifespan.on",
         # SQLAlchemy dialects
-        "sqlalchemy.dialects.postgresql",
-        "sqlalchemy.dialects.postgresql.asyncpg",
-        "sqlalchemy.dialects.postgresql.psycopg2",
+        "sqlalchemy.dialects.sqlite",
+        "sqlalchemy.dialects.sqlite.aiosqlite",
         # Async support
-        "asyncpg",
-        "asyncpg.pgproto.pgproto",
+        "aiosqlite",
         # Alembic
         "alembic",
         "alembic.config",

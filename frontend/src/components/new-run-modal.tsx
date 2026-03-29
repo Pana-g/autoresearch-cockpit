@@ -183,7 +183,7 @@ export function NewRunModal({ open, onOpenChange, projectId: initialProjectId }:
           </Button>
 
           {createRun.isError && (
-            <p className="text-xs text-red-400 text-center">{(createRun.error as Error).message}</p>
+            <p className="text-xs text-red-400 text-center">{createRun.error instanceof Error ? createRun.error.message : "An error occurred"}</p>
           )}
         </div>
       </DialogContent>

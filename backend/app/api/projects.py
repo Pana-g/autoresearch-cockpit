@@ -1,6 +1,5 @@
 """Project endpoints."""
 
-import asyncio
 import os
 from pathlib import Path
 
@@ -95,7 +94,7 @@ async def update_project_settings(project_id: str, body: ProjectSettingsUpdate, 
     project = await db.get(Project, project_id)
     if project is None:
         raise HTTPException(404, "Project not found")
-    for field in ("default_auto_approve", "default_auto_continue", "default_max_iterations", "default_include_machine_info", "default_auto_compact", "default_compact_threshold_pct", "default_context_limit"):
+    for field in ("default_auto_approve", "default_auto_continue", "default_max_iterations", "default_include_machine_info", "default_max_consecutive_failures", "default_auto_compact", "default_compact_threshold_pct", "default_context_limit"):
         val = getattr(body, field)
         if val is not None:
             setattr(project, field, val)

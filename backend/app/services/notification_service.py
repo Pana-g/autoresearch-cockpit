@@ -12,6 +12,7 @@ from app.db import async_session_factory
 from app.models.channel import NotificationChannel
 from app.models.project import Project
 from app.models.run import Run
+from app.services.encryption import decrypt
 from app.services.event_bus import subscribe_global, unsubscribe_global
 
 logger = logging.getLogger(__name__)
@@ -46,9 +47,7 @@ async def _get_active_channels(session: AsyncSession, run_id: str | None) -> lis
         # Filter by linked run
         if ch.linked_run_id and ch.linked_run_id != run_id:
             continue
-        config = json.loads(
-            __import__("app.services.encryption", fromlist=["decrypt"]).decrypt(ch.encrypted_config)
-        )
+        config = json.loads(decrypt(ch.encrypted_config))
         out.append((ch, config))
     return out
 

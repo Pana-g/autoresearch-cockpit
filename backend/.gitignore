@@ -8,3 +8,8 @@ build/
 .pytest_cache/
 .ruff_cache/
 .env
+
+# SQLite database files
+data/*.db
+data/*.db-shm
+data/*.db-wal

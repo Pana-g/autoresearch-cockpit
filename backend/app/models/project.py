@@ -17,17 +17,17 @@ class Project(Base, TimestampMixin):
     best_iteration: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Default run settings — applied when creating new runs
-    default_auto_approve: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
-    default_auto_continue: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    default_auto_approve: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    default_auto_continue: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     default_max_iterations: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     default_overfit_floor: Mapped[float | None] = mapped_column(Float, nullable=True)
     default_overfit_margin: Mapped[float | None] = mapped_column(Float, nullable=True)
 
-    default_include_machine_info: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    default_include_machine_info: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     default_max_consecutive_failures: Mapped[int] = mapped_column(Integer, default=6, server_default="6")
 
     # Default context compaction settings
-    default_auto_compact: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    default_auto_compact: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     default_compact_threshold_pct: Mapped[int] = mapped_column(Integer, default=75, server_default="75")
     default_context_limit: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
