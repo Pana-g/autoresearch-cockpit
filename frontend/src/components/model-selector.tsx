@@ -50,7 +50,7 @@ export function ModelSelector({ provider, model, credentialId, onProviderChange,
         <p className="text-sm text-muted-foreground">No active provider credentials found.</p>
         <p className="text-xs text-muted-foreground">
           Enable a credential on the{" "}
-          <Link to="/providers" className="text-primary hover:underline">Providers</Link>{" "}
+          <Link to="/settings/providers" className="text-primary hover:underline">Providers</Link>{" "}
           page to start a run.
         </p>
       </div>
@@ -64,7 +64,7 @@ export function ModelSelector({ provider, model, credentialId, onProviderChange,
         <p className="text-sm text-muted-foreground">No providers configured yet.</p>
         <p className="text-xs text-muted-foreground">
           Go to the{" "}
-          <Link to="/providers" className="text-primary hover:underline">Providers</Link>{" "}
+          <Link to="/settings/providers" className="text-primary hover:underline">Providers</Link>{" "}
           page to add an API key or connect a provider before creating a run.
         </p>
       </div>
