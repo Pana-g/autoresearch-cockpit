@@ -79,7 +79,5 @@ echo *** Build complete! ***
 echo   Binary:  %DIST%\autoresearch-cockpit-%PLATFORM%.exe
 echo.
 echo To test locally:
-echo   1. Start PostgreSQL:  docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres --name arc-db postgres:16
-echo   2. Create .env:       copy %DIST%\.env.example .env  ^(fill in AR_ENCRYPTION_KEY^)
-echo   3. Run the binary:    %DIST%\autoresearch-cockpit-%PLATFORM%.exe
-echo   4. Open browser:      http://localhost:8000
+echo   1. Run the binary:    %DIST%\autoresearch-cockpit-%PLATFORM%.exe
+echo   2. Open browser:      http://localhost:8000

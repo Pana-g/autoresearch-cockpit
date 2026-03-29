@@ -62,16 +62,8 @@ echo "⟳  Setting up backend..."
 cd "$ROOT/backend"
 uv sync
 echo "✓  Backend dependencies installed"
-
-# Generate encryption key if not set
-ENV_FILE="$ROOT/backend/.env"
-if [[ ! -f "$ENV_FILE" ]] || ! grep -q "AR_ENCRYPTION_KEY" "$ENV_FILE" 2>/dev/null; then
-  KEY=$(uv run python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
-  echo "AR_ENCRYPTION_KEY=$KEY" >> "$ENV_FILE"
-  echo "✓  Generated encryption key → backend/.env"
-fi
-
 echo "✓  Database will be auto-created on first run (SQLite)"
+echo "✓  Encryption key will be auto-generated on first run"
 
 # ── 3. Frontend setup ────────────────────────────────────
 echo ""

@@ -4,7 +4,7 @@
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | ✅ Yes     |
+| 0.5.x   | ✅ Yes     |
 
 ## Reporting a Vulnerability
 
@@ -25,13 +25,9 @@ You can expect an acknowledgement within **72 hours** and a resolution timeline 
 ### API Credentials
 
 - All LLM provider API keys are encrypted at rest using [Fernet](https://cryptography.io/en/latest/fernet/) symmetric encryption.
-- The encryption key (`AR_ENCRYPTION_KEY`) **must** be kept secret and out of version control.
-- The `backend/.env` file is git-ignored by default — never commit it.
-
-### API Access Control
-
-- If `AR_API_KEY` is set in `backend/.env`, all API requests require a matching `X-API-Key` header.
-- When `AR_API_KEY` is empty, authentication is disabled — **only do this on trusted private networks or localhost**.
+- An encryption key is **auto-generated** on first run and persisted to `~/.autoresearch/encryption.key` (chmod 600).
+- You can override the key via the `AR_ENCRYPTION_KEY` environment variable if needed (e.g. when migrating to a new machine).
+- The `backend/.env` file (if used) is git-ignored by default — never commit it.
 
 ### Network Exposure
 
@@ -40,7 +36,8 @@ You can expect an acknowledgement within **72 hours** and a resolution timeline 
 
 ### Database
 
-- The default PostgreSQL credentials (`postgres/postgres`) are for local development only. Use strong credentials and restrict network access in any shared or production environment.
+- The default database is SQLite, stored locally at `data/autoresearch.db`. No credentials needed.
+- If using PostgreSQL, use strong credentials and restrict network access in any shared or production environment.
 
 ### Docker Deployment
 

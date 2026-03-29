@@ -59,19 +59,8 @@ echo Setting up backend...
 cd /d "%ROOT%backend"
 uv sync
 echo [OK] Backend dependencies installed
-
-:: Generate encryption key if not set
-if not exist ".env" (
-    echo. > .env
-)
-findstr /c:"AR_ENCRYPTION_KEY" .env >nul 2>&1
-if %errorlevel% neq 0 (
-    for /f "delims=" %%k in ('uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"') do set "FERNET_KEY=%%k"
-    echo AR_ENCRYPTION_KEY=!FERNET_KEY!>> .env
-    echo [OK] Generated encryption key - saved to backend\.env
-)
-
 echo [OK] Database will be auto-created on first run (SQLite)
+echo [OK] Encryption key will be auto-generated on first run
 
 :: ── 3. Frontend setup ────────────────────────────────────
 echo.

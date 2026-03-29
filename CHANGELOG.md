@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-03-29
+
+### Changed
+
+- **Zero-config startup** — removed the `.env` file and `AR_ENCRYPTION_KEY` as requirements; the encryption key is now auto-generated and persisted to `~/.autoresearch/encryption.key` on first run. No manual key generation or `.env` creation needed.
+- **Simplified setup scripts** — `setup.sh` / `setup.bat` no longer generate a `.env` file or encryption key; just install dependencies
+- **Simplified binary startup** — `server.py` no longer warns about missing `.env`; the app is fully self-configuring
+- **Updated `.env.example`** — all fields are now optional with clear documentation; the file is no longer required
+
+### Removed
+
+- **`AR_ENCRYPTION_KEY` as a required env var** — still supported as an override, but no longer needed
+- **`.env` file generation from setup scripts** — the file is optional for advanced users only
+
 ## [0.5.0] - 2026-03-29
 
 ### Changed
@@ -124,7 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database migrations** — Alembic-managed schema with full migration history
 - **Default project settings** — configurable defaults for run parameters and compaction settings
 
-[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.2.0...v0.3.0

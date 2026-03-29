@@ -133,12 +133,6 @@ def main() -> None:
     if env_file.exists():
         _load_dotenv(env_file)
         logger.info("Loaded environment from %s", env_file)
-    else:
-        logger.warning(
-            ".env not found at %s — using defaults / environment variables. "
-            "Copy .env.example to .env and fill in AR_ENCRYPTION_KEY.",
-            env_file,
-        )
 
     if not args.no_migrate:
         _init_database()
