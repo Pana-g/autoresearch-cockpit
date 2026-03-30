@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"/></a>
-  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.5.5-informational" alt="Version"/></a>
+  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.5.6-informational" alt="Version"/></a>
   <a href="https://github.com/Pana-g/autoresearch-cockpit/issues"><img src="https://img.shields.io/github/issues/Pana-g/autoresearch-cockpit" alt="Open Issues"/></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions Welcome"/></a>
   <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-ff69b4" alt="Code of Conduct"/></a>
@@ -85,20 +85,20 @@ irm https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.p
 
 Then run:
 ```sh
-autoresearch-cockpit                  # start backend + frontend (default)
+autoresearch-cockpit                  # start backend (8000) + frontend (5173)
 autoresearch-cockpit backend          # backend API only (port 8000)
 autoresearch-cockpit frontend         # bundled frontend only (port 5173)
-autoresearch-cockpit --port 9000      # custom port
+autoresearch-cockpit --backend-port 9000 --frontend-port 9001  # custom ports
 ```
 
-Open **http://localhost:8000** — the frontend and backend are both served from the single binary. A local SQLite database and encryption key are created automatically on first run.
+Open **http://localhost:5173** for the UI. The backend API runs on **http://localhost:8000**. A local SQLite database and encryption key are created automatically on first run.
 
 <details>
 <summary>Install options</summary>
 
 ```sh
 # Install a specific version
-curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --version v0.5.5
+curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --version v0.5.6
 
 # Custom install directory
 curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --dir /usr/local/bin

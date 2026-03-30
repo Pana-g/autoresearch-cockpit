@@ -84,7 +84,7 @@ def _run_alembic_upgrade() -> None:
 
 app = FastAPI(
     title="AutoResearch Cockpit",
-    version="0.5.5",
+    version="0.5.6",
     description="Control plane for karpathy/autoresearch",
     lifespan=lifespan,
 )
@@ -120,42 +120,4 @@ async def health():
     return {"status": "ok"}
 
 
-# ── Serve bundled / built frontend (must be mounted last) ─
-# When running as a PyInstaller bundle the frontend is in frontend_dist/ inside _MEIPASS.
-# During development it is the Vite build output at frontend/dist/ (if it exists).
-# Skipped when AR_SERVE_MODE=backend (user wants API only).
-import os as _os
-
-_serve_mode = _os.environ.get("AR_SERVE_MODE", "all")
-
-if _serve_mode != "backend":
-    def _find_frontend_dist() -> Path | None:
-        if getattr(sys, "frozen", False):
-            candidates = [
-                Path(sys._MEIPASS) / "frontend_dist",  # type: ignore[attr-defined]
-                Path(sys.executable).resolve().parent / "frontend_dist",
-            ]
-        else:
-            repo_root = Path(__file__).resolve().parent.parent.parent
-            candidates = [
-                # Staged build output used by PyInstaller workflows and some local packaging paths.
-                Path(__file__).resolve().parent.parent / "frontend_dist",
-                # Vite output when running from source.
-                repo_root / "frontend" / "dist",
-            ]
-
-        for candidate in candidates:
-            if candidate.exists():
-                return candidate
-        return None
-
-    _frontend_dist = _find_frontend_dist()
-    if _frontend_dist is not None:
-        from fastapi.staticfiles import StaticFiles
-
-        app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="frontend")
-        logger.info("Serving frontend from %s", _frontend_dist)
-    else:
-        logger.debug("No frontend/dist found — skipping static file mount (dev mode or not yet built)")
-else:
-    logger.info("Backend-only mode — skipping frontend static file mount")
+# Frontend is served on a separate port by server.py — no static mount here.

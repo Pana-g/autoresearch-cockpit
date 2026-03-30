@@ -3,12 +3,13 @@ Standalone server entry point.
 
 Used by PyInstaller to create a self-contained executable that:
   1. Creates or migrates the database (SQLite auto-created, PostgreSQL runs Alembic)
-  2. Starts the FastAPI/uvicorn server (which also serves the bundled frontend)
+  2. Starts the backend API server and a separate frontend static file server
 
 Usage:
-  ./autoresearch-cockpit           # uses defaults (0.0.0.0:8000)
-  ./autoresearch-cockpit --port 9000
-  ./autoresearch-cockpit --host 127.0.0.1 --port 9000
+  ./autoresearch-cockpit                          # backend on :8000, frontend on :5173
+  ./autoresearch-cockpit --backend-port 9000      # custom backend port
+  ./autoresearch-cockpit backend --port 9000      # backend only
+  ./autoresearch-cockpit frontend --port 3000     # frontend only
 """
 
 from __future__ import annotations
@@ -110,9 +111,9 @@ def _run_alembic_upgrade(base: Path) -> None:
         sys.exit(1)
 
 
-def _default_port(command: str) -> int:
-    """Return the default port for the given command."""
-    return 5173 if command == "frontend" else 8000
+# Default ports
+_DEFAULT_BACKEND_PORT = 8000
+_DEFAULT_FRONTEND_PORT = 5173
 
 
 def _find_frontend_dist() -> Path | None:
@@ -150,15 +151,15 @@ def main() -> None:
         help="What to start: all (default), backend, or frontend",
     )
     parser.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=None, help="Bind port (default: 8000, or 5173 for frontend)")
+    parser.add_argument("--port", type=int, default=None, help="Bind port (default: 8000 for backend, 5173 for frontend)")
+    parser.add_argument("--backend-port", type=int, default=None, help="Backend API port (default: 8000, used with 'all')")
+    parser.add_argument("--frontend-port", type=int, default=None, help="Frontend port (default: 5173, used with 'all')")
     parser.add_argument(
         "--no-migrate",
         action="store_true",
         help="Skip automatic database migrations on startup",
     )
     args = parser.parse_args()
-
-    port = args.port if args.port is not None else _default_port(args.command)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
 
@@ -172,20 +173,30 @@ def main() -> None:
         logger.info("Loaded environment from %s", env_file)
 
     # Tell the FastAPI app which components to serve
-    os.environ["AR_SERVE_MODE"] = args.command
+    os.environ["AR_SERVE_MODE"] = args.command if args.command != "all" else "backend"
 
     if args.command == "frontend":
         # Frontend-only: serve the bundled static files without backend API
+        port = args.port if args.port is not None else _DEFAULT_FRONTEND_PORT
         _run_frontend(args.host, port)
+    elif args.command == "all":
+        # Both: backend API + frontend on separate ports
+        backend_port = args.backend_port or args.port or _DEFAULT_BACKEND_PORT
+        frontend_port = args.frontend_port or _DEFAULT_FRONTEND_PORT
+
+        if not args.no_migrate:
+            _init_database()
+
+        _run_all(args.host, backend_port, frontend_port)
     else:
-        # Backend or All: run the full FastAPI app
+        # Backend only
+        port = args.port if args.port is not None else _DEFAULT_BACKEND_PORT
         if not args.no_migrate:
             _init_database()
 
         import uvicorn
 
-        label = "backend + frontend" if args.command == "all" else "backend API"
-        logger.info("Starting AutoResearch Cockpit (%s) on http://%s:%d", label, args.host, port)
+        logger.info("Starting AutoResearch Cockpit (backend API) on http://%s:%d", args.host, port)
         uvicorn.run("app.main:app", host=args.host, port=port, log_level="info")
 
 
@@ -208,6 +219,43 @@ def _run_frontend(host: str, port: int) -> None:
 
     logger.info("Serving frontend on http://%s:%d", host, port)
     uvicorn.run(frontend_app, host=host, port=port, log_level="info")
+
+
+def _run_all(host: str, backend_port: int, frontend_port: int) -> None:
+    """Start backend API and frontend on separate ports."""
+    dist_dir = _find_frontend_dist()
+    if dist_dir is None:
+        logger.error("No bundled frontend found — starting backend only")
+        import uvicorn
+
+        logger.info("Starting AutoResearch Cockpit (backend API) on http://%s:%d", host, backend_port)
+        uvicorn.run("app.main:app", host=host, port=backend_port, log_level="info")
+        return
+
+    # Start frontend in a child process
+    frontend_proc = multiprocessing.Process(
+        target=_run_frontend, args=(host, frontend_port), daemon=True
+    )
+    frontend_proc.start()
+
+    import uvicorn
+
+    logger.info("")
+    logger.info("══════════════════════════════════════════════")
+    logger.info("  AutoResearch Cockpit — Running")
+    logger.info("")
+    logger.info("  Backend API: http://%s:%d", host, backend_port)
+    logger.info("  Frontend:    http://%s:%d", host, frontend_port)
+    logger.info("")
+    logger.info("  Press Ctrl+C to stop")
+    logger.info("══════════════════════════════════════════════")
+    logger.info("")
+
+    try:
+        uvicorn.run("app.main:app", host=host, port=backend_port, log_level="info")
+    finally:
+        frontend_proc.terminate()
+        frontend_proc.join(timeout=5)
 
 
 def _load_dotenv(path: Path) -> None:

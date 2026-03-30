@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: install.sh [--dir /path] [--version v0.5.5] [--uninstall] [--keep-data]"
+      echo "Usage: install.sh [--dir /path] [--version v0.5.6] [--uninstall] [--keep-data]"
       exit 1
       ;;
   esac

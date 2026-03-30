@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-03-30
+
+### Changed
+
+- **Dual-port serving** — the `all` command (default) now starts the backend API on port 8000 and the bundled frontend on port 5173 in separate processes, matching the development setup. Startup banner prints both URLs.
+- **New CLI flags** — added `--backend-port` and `--frontend-port` for the `all` command to customise each port independently.
+- **Simplified app mount** — removed frontend static file mount from the FastAPI app; frontend is always served by a dedicated static file server.
+
 ## [0.5.5] - 2026-03-30
 
 ### Changed
@@ -174,7 +182,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database migrations** — Alembic-managed schema with full migration history
 - **Default project settings** — configurable defaults for run parameters and compaction settings
 
-[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.5...HEAD
+[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.2...v0.5.3
