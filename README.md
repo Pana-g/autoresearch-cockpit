@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"/></a>
-  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.5.4-informational" alt="Version"/></a>
+  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.5.5-informational" alt="Version"/></a>
   <a href="https://github.com/Pana-g/autoresearch-cockpit/issues"><img src="https://img.shields.io/github/issues/Pana-g/autoresearch-cockpit" alt="Open Issues"/></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions Welcome"/></a>
   <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-ff69b4" alt="Code of Conduct"/></a>
@@ -98,7 +98,7 @@ Open **http://localhost:8000** — the frontend and backend are both served from
 
 ```sh
 # Install a specific version
-curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --version v0.5.4
+curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --version v0.5.5
 
 # Custom install directory
 curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --dir /usr/local/bin
@@ -106,7 +106,7 @@ curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/in
 # Uninstall
 curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --uninstall
 
-# Uninstall but keep ~/.autoresearch data
+# Uninstall but keep ~/.autoresearch-cockpit data
 curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --uninstall --keep-data
 ```
 
@@ -114,7 +114,7 @@ curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/in
 # Windows uninstall
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.ps1))) -Uninstall
 
-# Windows uninstall but keep ~/.autoresearch data
+# Windows uninstall but keep ~/.autoresearch-cockpit data
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.ps1))) -Uninstall -KeepData
 ```
 
@@ -268,7 +268,7 @@ docker compose --profile full down
 docker compose --profile full down -v
 ```
 
-> **Note**: The backend container needs access to autoresearch workspace directories. The `workspaces` volume is mounted at `/root/.autoresearch/workspaces` inside the container.
+> **Note**: The backend container needs access to autoresearch workspace directories. The `workspaces` volume is mounted at `/root/.autoresearch-cockpit/workspaces` inside the container.
 
 ---
 
@@ -288,8 +288,8 @@ All configuration is optional. Set in `backend/.env` to override defaults:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `AR_ENCRYPTION_KEY` | auto-generated | Fernet key for encrypting API credentials at rest (auto-generated and persisted to `~/.autoresearch/encryption.key` on first run) |
-| `AR_DATABASE_URL` | `sqlite+aiosqlite:///data/autoresearch.db` | Database connection string |
+| `AR_ENCRYPTION_KEY` | auto-generated | Fernet key for encrypting API credentials at rest (auto-generated and persisted to `~/.autoresearch-cockpit/encryption.key` on first run) |
+| `AR_DATABASE_URL` | `sqlite+aiosqlite:///$HOME/.autoresearch-cockpit/autoresearch.db` | Database connection string |
 | `AR_DEFAULT_TRAINING_TIMEOUT_SECONDS` | `1800` | Training subprocess timeout (30 min) |
 | `AR_DEFAULT_AGENT_INACTIVITY_TIMEOUT` | `300` | Agent inactivity timeout (5 min) |
 | `AR_CORS_ORIGINS` | `["*"]` | Allowed CORS origins |

@@ -1,13 +1,57 @@
+import shutil
 from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
-# Default SQLite location: <exe_dir>/data/autoresearch.db
-_DEFAULT_DB_DIR = Path("data")
-_DEFAULT_DB_PATH = _DEFAULT_DB_DIR / "autoresearch.db"
+# Unified app data directory: ~/.autoresearch-cockpit
+_DEFAULT_DATA_DIR = Path.home() / ".autoresearch-cockpit"
+_DEFAULT_DB_PATH = _DEFAULT_DATA_DIR / "autoresearch.db"
+_DEFAULT_WORKSPACES_DIR = _DEFAULT_DATA_DIR / "workspaces"
+
+
+def _migrate_legacy_db_if_needed() -> None:
+    """Move legacy SQLite DB into ~/.autoresearch-cockpit when possible."""
+    if _DEFAULT_DB_PATH.exists():
+        return
+
+    legacy_candidates = [
+        Path("data") / "autoresearch.db",
+        Path.home() / ".autoresearch" / "autoresearch.db",
+    ]
+
+    for legacy in legacy_candidates:
+        if not legacy.exists():
+            continue
+
+        _DEFAULT_DATA_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            legacy.replace(_DEFAULT_DB_PATH)
+        except OSError:
+            # Cross-device move fallback
+            shutil.copy2(legacy, _DEFAULT_DB_PATH)
+            legacy.unlink(missing_ok=True)
+        break
+
+
+def _migrate_legacy_workspaces_if_needed() -> None:
+    """Move legacy workspaces into ~/.autoresearch-cockpit/workspaces when possible."""
+    if _DEFAULT_WORKSPACES_DIR.exists():
+        return
+
+    legacy = Path.home() / ".autoresearch" / "workspaces"
+    if not legacy.exists():
+        return
+
+    _DEFAULT_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        legacy.replace(_DEFAULT_WORKSPACES_DIR)
+    except OSError:
+        shutil.copytree(legacy, _DEFAULT_WORKSPACES_DIR)
+        shutil.rmtree(legacy, ignore_errors=True)
 
 
 def _default_database_url() -> str:
+    _migrate_legacy_db_if_needed()
     return f"sqlite+aiosqlite:///{_DEFAULT_DB_PATH}"
 
 
@@ -39,6 +83,16 @@ class Settings(BaseSettings):
     @property
     def is_sqlite(self) -> bool:
         return self.database_url.startswith("sqlite")
+
+    @property
+    def app_data_dir(self) -> Path:
+        return _DEFAULT_DATA_DIR
+
+    @property
+    def workspaces_dir(self) -> Path:
+        _migrate_legacy_workspaces_if_needed()
+        _DEFAULT_WORKSPACES_DIR.mkdir(parents=True, exist_ok=True)
+        return _DEFAULT_WORKSPACES_DIR
 
 
 settings = Settings()

@@ -1,6 +1,6 @@
 [project]
 name = "autoresearch-cockpit"
-version = "0.5.4"
+version = "0.5.5"
 description = "Control plane backend for karpathy/autoresearch"
 requires-python = ">=3.12"
 dependencies = [

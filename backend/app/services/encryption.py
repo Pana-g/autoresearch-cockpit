@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 
 _fernet: Fernet | None = None
 
-_KEY_FILE = Path.home() / ".autoresearch" / "encryption.key"
+_KEY_FILE = Path.home() / ".autoresearch-cockpit" / "encryption.key"
+_LEGACY_KEY_FILE = Path.home() / ".autoresearch" / "encryption.key"
 
 
 def _get_fernet() -> Fernet:
@@ -23,6 +24,12 @@ def _get_fernet() -> Fernet:
             if _KEY_FILE.exists():
                 key = _KEY_FILE.read_text().strip()
                 logger.info("Loaded encryption key from %s", _KEY_FILE)
+            elif _LEGACY_KEY_FILE.exists():
+                key = _LEGACY_KEY_FILE.read_text().strip()
+                _KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
+                _KEY_FILE.write_text(key)
+                _KEY_FILE.chmod(0o600)
+                logger.info("Migrated encryption key from %s to %s", _LEGACY_KEY_FILE, _KEY_FILE)
             else:
                 key = Fernet.generate_key().decode()
                 # Persist so credentials survive restarts

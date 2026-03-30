@@ -136,9 +136,7 @@ async def prepare_run(run_id: str, project_source_path: str) -> None:
         await transition_state(session, run, RunState.PREPARING)
 
         try:
-            workspace_path = str(
-                Path.home() / ".autoresearch" / "workspaces" / run_id
-            )
+            workspace_path = str(settings.workspaces_dir / run_id)
             branch_name = f"run/{run_id}"
 
             git = GitService(workspace_path)

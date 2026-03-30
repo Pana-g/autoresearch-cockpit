@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: install.sh [--dir /path] [--version v0.5.4] [--uninstall] [--keep-data]"
+      echo "Usage: install.sh [--dir /path] [--version v0.5.5] [--uninstall] [--keep-data]"
       exit 1
       ;;
   esac
@@ -60,7 +60,7 @@ if [[ "$ACTION" == "uninstall" ]]; then
     echo "Nothing to uninstall — ${TARGET} not found"
   fi
   # Clean up data directory
-  DATA_DIR="${HOME}/.autoresearch"
+  DATA_DIR="${HOME}/.autoresearch-cockpit"
   if [[ -d "$DATA_DIR" ]]; then
     if [[ "$WIPE_DATA" -eq 1 ]]; then
       rm -rf "$DATA_DIR"

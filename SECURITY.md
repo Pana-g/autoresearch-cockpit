@@ -25,7 +25,7 @@ You can expect an acknowledgement within **72 hours** and a resolution timeline 
 ### API Credentials
 
 - All LLM provider API keys are encrypted at rest using [Fernet](https://cryptography.io/en/latest/fernet/) symmetric encryption.
-- An encryption key is **auto-generated** on first run and persisted to `~/.autoresearch/encryption.key` (chmod 600).
+- An encryption key is **auto-generated** on first run and persisted to `~/.autoresearch-cockpit/encryption.key` (chmod 600).
 - You can override the key via the `AR_ENCRYPTION_KEY` environment variable if needed (e.g. when migrating to a new machine).
 - The `backend/.env` file (if used) is git-ignored by default — never commit it.
 
@@ -36,7 +36,7 @@ You can expect an acknowledgement within **72 hours** and a resolution timeline 
 
 ### Database
 
-- The default database is SQLite, stored locally at `data/autoresearch.db`. No credentials needed.
+- The default database is SQLite, stored locally at `~/.autoresearch-cockpit/autoresearch.db`. No credentials needed.
 - If using PostgreSQL, use strong credentials and restrict network access in any shared or production environment.
 
 ### Docker Deployment

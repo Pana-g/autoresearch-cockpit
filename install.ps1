@@ -35,7 +35,7 @@ if ($Uninstall) {
         Write-Host "Nothing to uninstall - $ExePath not found"
     }
 
-    $DataDir = Join-Path $env:USERPROFILE ".autoresearch"
+    $DataDir = Join-Path $env:USERPROFILE ".autoresearch-cockpit"
     if ((Test-Path $DataDir) -and -not $KeepData) {
             Remove-Item $DataDir -Recurse -Force
             Write-Host "[OK] Removed $DataDir"
