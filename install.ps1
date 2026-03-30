@@ -3,6 +3,7 @@
 # Usage:
 #   irm https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.ps1 | iex
 #   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.ps1))) -Uninstall
+#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.ps1))) -Uninstall -KeepData
 #
 # Or with custom install directory:
 #   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.ps1))) -Dir "C:\tools"
@@ -10,7 +11,8 @@
 param(
     [string]$Dir = "$env:LOCALAPPDATA\Programs\autoresearch-cockpit",
     [string]$Version = "",
-    [switch]$Uninstall
+    [switch]$Uninstall,
+    [switch]$KeepData
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,17 +36,12 @@ if ($Uninstall) {
     }
 
     $DataDir = Join-Path $env:USERPROFILE ".autoresearch"
-    if (Test-Path $DataDir) {
-        Write-Host ""
-        Write-Host "Data directory found at $DataDir"
-        Write-Host "  Contains your database and encryption key."
-        $confirm = Read-Host "  Delete it? [y/N]"
-        if ($confirm -eq 'y' -or $confirm -eq 'Y') {
+    if ((Test-Path $DataDir) -and -not $KeepData) {
             Remove-Item $DataDir -Recurse -Force
             Write-Host "[OK] Removed $DataDir"
-        } else {
-            Write-Host "  Kept $DataDir"
-        }
+    }
+    if ((Test-Path $DataDir) -and $KeepData) {
+        Write-Host "Kept $DataDir (-KeepData)"
     }
 
     # Remove from PATH
@@ -116,3 +113,4 @@ Write-Host "  $BinaryName --help           # see all options"
 Write-Host ""
 Write-Host "Uninstall:"
 Write-Host "  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/$Repo/main/install.ps1))) -Uninstall"
+Write-Host "  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/$Repo/main/install.ps1))) -Uninstall -KeepData"

@@ -37,7 +37,7 @@ export default function RunCreationPage() {
   };
 
   return (
-    <div className="p-8 max-w-xl mx-auto">
+    <div className="p-4 md:p-6 lg:p-8 max-w-xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

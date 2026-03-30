@@ -55,6 +55,7 @@ export default function RunCockpitPage() {
   const [restartIteration, setRestartIteration] = useState<number | null>(null);
   const [compactionModalOpen, setCompactionModalOpen] = useState(false);
   const [diffCompareOpen, setDiffCompareOpen] = useState(false);
+  const [mobileTimelineOpen, setMobileTimelineOpen] = useState(false);
 
   const handleAction = useCallback(
     (action: RunAction) => {
@@ -89,9 +90,9 @@ export default function RunCockpitPage() {
   const lastTraining = trainingSteps?.[0];
 
   return (
-    <div className="flex h-full">
+    <div className="flex flex-col md:flex-row h-full">
       {/* ── Left Panel: Config Summary ──────────────────── */}
-      <div className="w-72 border-r border-border flex flex-col shrink-0 overflow-y-auto" style={{ background: "var(--sidebar)" }}>
+      <div className="w-full md:w-72 border-b md:border-b-0 md:border-r border-border flex flex-col shrink-0 overflow-y-auto max-h-[50vh] md:max-h-none" style={{ background: "var(--sidebar)" }}>
         <div className="p-5 space-y-5">
           {/* Run Header */}
           <div>
@@ -432,8 +433,8 @@ export default function RunCockpitPage() {
       </div>
 
       {/* ── Center Panel: Active Step ────────────────────── */}
-      <div className="flex-1 overflow-y-auto bg-grid">
-        <div className="p-8 max-w-4xl mx-auto">
+      <div className="flex-1 overflow-y-auto bg-grid min-h-0">
+        <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
           <IterationChart projectId={projectId!} runId={runId!} bestValBpb={run.best_val_bpb} />
           <CollapsibleActivity state={state}>
             <AnimatePresence mode="wait">
@@ -464,7 +465,7 @@ export default function RunCockpitPage() {
       </div>
 
       {/* ── Right Panel: Step Timeline ───────────────────── */}
-      <div className="w-72 border-l border-border shrink-0 flex flex-col overflow-hidden" style={{ background: "var(--sidebar)" }}>
+      <div className="hidden md:flex w-72 border-l border-border shrink-0 flex-col overflow-hidden" style={{ background: "var(--sidebar)" }}>
         <StepTimeline
           agentSteps={agentSteps}
           trainingSteps={trainingSteps}
@@ -492,6 +493,74 @@ export default function RunCockpitPage() {
           }}
         />
       </div>
+
+      {/* ── Mobile Timeline FAB + Drawer ─────────────── */}
+      <button
+        onClick={() => setMobileTimelineOpen(true)}
+        className="fixed bottom-5 right-5 z-40 md:hidden h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        aria-label="Open step timeline"
+      >
+        <Layers className="h-5 w-5" />
+      </button>
+
+      <AnimatePresence>
+        {mobileTimelineOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/50 z-50 md:hidden"
+              onClick={() => setMobileTimelineOpen(false)}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="fixed inset-y-0 right-0 w-[min(320px,85vw)] z-50 md:hidden border-l border-border flex flex-col overflow-hidden"
+              style={{ background: "var(--sidebar)" }}
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+                <span className="text-sm font-medium">Step Timeline</span>
+                <button
+                  onClick={() => setMobileTimelineOpen(false)}
+                  className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-accent transition-colors"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+              <StepTimeline
+                agentSteps={agentSteps}
+                trainingSteps={trainingSteps}
+                selectedId={selectedStepId}
+                onSelect={(id, type) => { setSelectedStepId(id); setSelectedStepType(type); setMobileTimelineOpen(false); }}
+                onRestartFromIteration={(iteration) => { setRestartIteration(iteration); setMobileTimelineOpen(false); }}
+                onCompare={() => { setDiffCompareOpen(true); setMobileTimelineOpen(false); }}
+                onSetProjectBest={(stepId) => {
+                  setProjectBest.mutate(stepId, {
+                    onSuccess: (project) => {
+                      toast.success(`Project best updated to ${project.best_val_bpb?.toFixed(4)} (iter #${project.best_iteration})`);
+                    },
+                    onError: (err) => {
+                      toast.error(`Failed to set project best: ${err.message}`);
+                    },
+                  });
+                }}
+                hasMore={
+                  (agentStepsQuery.hasNextPage ?? false) || (trainingStepsQuery.hasNextPage ?? false)
+                }
+                isFetchingMore={agentStepsQuery.isFetchingNextPage || trainingStepsQuery.isFetchingNextPage}
+                onLoadMore={() => {
+                  if (agentStepsQuery.hasNextPage) agentStepsQuery.fetchNextPage();
+                  if (trainingStepsQuery.hasNextPage) trainingStepsQuery.fetchNextPage();
+                }}
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Training detail drawer */}
       {selectedStepId && selectedStepType === "training" && (
@@ -718,7 +787,7 @@ function CenterContent({
             )}
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-lg bg-muted/50 border border-border p-4">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">val_bpb</p>
             <p className="text-2xl font-mono font-bold text-emerald-400">{lastTraining.val_bpb?.toFixed(4) ?? "—"}</p>
@@ -778,7 +847,7 @@ function CenterContent({
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="rounded-lg bg-muted/50 border border-border p-3">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">val_bpb</p>
                 <p className={`text-lg font-mono font-bold ${
@@ -1117,7 +1186,7 @@ function TrainingDetailPanel({ step, onClose }: { step?: TrainingStep; onClose: 
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="fixed inset-y-0 right-0 w-[520px] z-50 border-l border-border flex flex-col"
+      className="fixed inset-y-0 right-0 w-full sm:w-[520px] z-50 border-l border-border flex flex-col"
       style={{ background: "var(--sidebar)" }}
     >
       {/* Header */}
@@ -1274,7 +1343,7 @@ function AgentDetailPanel({ step, onClose }: { step?: AgentStep; onClose: () => 
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="fixed inset-y-0 right-0 w-[600px] z-50 border-l border-border flex flex-col"
+      className="fixed inset-y-0 right-0 w-full sm:w-[600px] z-50 border-l border-border flex flex-col"
       style={{ background: "var(--sidebar)" }}
     >
       {/* Header */}

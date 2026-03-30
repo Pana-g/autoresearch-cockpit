@@ -127,13 +127,13 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex items-end justify-between"
+        className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
       >
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>

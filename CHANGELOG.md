@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-03-30
+
+### Fixed
+
+- **Responsive cockpit layout** — Reworked run cockpit layout for small screens so core sections no longer overflow on mobile viewports.
+- **Mobile step access** — Added a mobile timeline drawer (floating action button + slide-out panel) so iteration logs/timeline remain accessible on phones.
+- **Page spacing consistency** — Updated page containers, grids, and fixed-width controls to responsive breakpoints across Projects, Providers, Channels, Settings, Servers, and Run pages.
+
 ## [0.5.2] - 2026-03-30
 
 ### Fixed
@@ -153,7 +161,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database migrations** — Alembic-managed schema with full migration history
 - **Default project settings** — configurable defaults for run parameters and compaction settings
 
-[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.2...v0.5.3
+[0.5.2]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.3.0...v0.4.0

@@ -1,3 +1,4 @@
+import React from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { Beaker, KeyRound, FolderOpen, Menu, ChevronRight, Sun, Moon, Monitor, Bell, Settings, FileJson2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,8 +53,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const activeServer = useConnectionStore((s) => s.getActive());
   const location = useLocation();
 
+  // Close sidebar on route change on mobile
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const prevPath = React.useRef(location.pathname);
+  React.useEffect(() => {
+    if (prevPath.current !== location.pathname && isMobile && sidebarOpen) {
+      toggleSidebar();
+    }
+    prevPath.current = location.pathname;
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="flex h-screen overflow-hidden bg-background relative">
+      {/* Mobile overlay backdrop */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={toggleSidebar}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <AnimatePresence mode="wait">
         {sidebarOpen && (
@@ -62,7 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             animate={{ width: 220, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="flex-shrink-0 border-r border-border flex flex-col overflow-hidden"
+            className="flex-shrink-0 border-r border-border flex flex-col overflow-hidden fixed md:relative inset-y-0 left-0 z-50 md:z-auto"
             style={{ background: "var(--sidebar)" }}
           >
             {/* Logo */}
@@ -169,7 +194,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </div>
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse-dot" />
-            <span className="text-[10px] text-muted-foreground font-mono tracking-wide">
+            <span className="text-[10px] text-muted-foreground font-mono tracking-wide hidden sm:inline">
               {activeServer.label}
             </span>
           </div>

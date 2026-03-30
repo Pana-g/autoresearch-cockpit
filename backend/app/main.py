@@ -84,7 +84,7 @@ def _run_alembic_upgrade() -> None:
 
 app = FastAPI(
     title="AutoResearch Cockpit",
-    version="0.5.2",
+    version="0.5.3",
     description="Control plane for karpathy/autoresearch",
     lifespan=lifespan,
 )

@@ -281,13 +281,13 @@ export default function ChannelsPage() {
   const canSave = name && (editChannel || (channelType && currentTypeInfo?.config_fields.filter((f) => f.required).every((f) => config[f.key])));
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
+    <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex items-end justify-between"
+        className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
       >
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Notification Channels</h1>
@@ -337,10 +337,10 @@ export default function ChannelsPage() {
               {!editChannel && (
                 <div className="flex items-center gap-2">
                   <Select value={channelType} onValueChange={(v) => v && handleTypeChange(v)}>
-                    <SelectTrigger className="h-10 w-72 text-sm bg-muted/50 border-border">
+                    <SelectTrigger className="h-10 w-full sm:w-72 text-sm bg-muted/50 border-border">
                       <SelectValue placeholder="Select channel type" />
                     </SelectTrigger>
-                    <SelectContent className="w-72">
+                    <SelectContent className="w-[var(--radix-select-trigger-width)] sm:w-72">
                       {channelTypes?.map((t) => {
                         const Icon = CHANNEL_ICONS[t.name] ?? Globe;
                         return (

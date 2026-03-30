@@ -61,7 +61,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="p-4 md:p-6 lg:p-8 max-w-2xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -85,7 +85,7 @@ export default function SettingsPage() {
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Timeouts</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
                   Training Timeout

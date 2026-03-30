@@ -36,20 +36,20 @@ export default function ProjectDetailPage() {
   const bestBpb = project.best_val_bpb;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
       {/* Project Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
+          <div className="flex items-start gap-4 min-w-0">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
               <FolderOpen className="h-6 w-6 text-primary" />
             </div>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-tight truncate">{project.name}</h1>
               {project.description && <p className="text-sm text-muted-foreground mt-1">{project.description}</p>}
               <p className="text-[11px] font-mono text-muted-foreground mt-1">{project.source_path}</p>
             </div>
@@ -73,7 +73,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Stats Row */}
-        <div className="flex items-center gap-6 mt-6">
+        <div className="flex flex-wrap items-center gap-4 md:gap-6 mt-6">
           <div className="glass rounded-lg px-4 py-3 flex items-center gap-3">
             <Hash className="h-4 w-4 text-muted-foreground" />
             <div>

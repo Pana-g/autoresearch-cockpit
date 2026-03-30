@@ -5,6 +5,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash
 #   curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --dir /custom/path
 #   curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --uninstall
+#   curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --uninstall --keep-data
 #
 set -euo pipefail
 
@@ -12,6 +13,7 @@ REPO="Pana-g/autoresearch-cockpit"
 BINARY_NAME="autoresearch-cockpit"
 INSTALL_DIR="${HOME}/.local/bin"
 ACTION="install"
+WIPE_DATA=1
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -36,9 +38,13 @@ while [[ $# -gt 0 ]]; do
       ACTION="uninstall"
       shift
       ;;
+    --keep-data)
+      WIPE_DATA=0
+      shift
+      ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: install.sh [--dir /path] [--version v0.5.2] [--uninstall]"
+      echo "Usage: install.sh [--dir /path] [--version v0.5.3] [--uninstall] [--keep-data]"
       exit 1
       ;;
   esac
@@ -56,15 +62,11 @@ if [[ "$ACTION" == "uninstall" ]]; then
   # Clean up data directory
   DATA_DIR="${HOME}/.autoresearch"
   if [[ -d "$DATA_DIR" ]]; then
-    echo ""
-    echo "Data directory found at ${DATA_DIR}"
-    echo "  Contains your database and encryption key."
-    read -rp "  Delete it? [y/N] " confirm
-    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+    if [[ "$WIPE_DATA" -eq 1 ]]; then
       rm -rf "$DATA_DIR"
       echo "✓ Removed ${DATA_DIR}"
     else
-      echo "  Kept ${DATA_DIR}"
+      echo "Kept ${DATA_DIR} (--keep-data)"
     fi
   fi
   exit 0
@@ -178,3 +180,4 @@ echo "  ${BINARY_NAME} --help           # see all options"
 echo ""
 echo "Uninstall:"
 echo "  curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- --uninstall"
+echo "  curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- --uninstall --keep-data"

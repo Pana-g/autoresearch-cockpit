@@ -132,6 +132,7 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
   const { data: rawData } = useChartData(projectId, runId);
   const [collapsed, setCollapsed] = useState(false);
   const [brushRange, setBrushRange] = useState<{ startIndex?: number; endIndex?: number }>({});
+  const [isMobile, setIsMobile] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   const data = useMemo<ChartPoint[]>(() => {
@@ -205,6 +206,16 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
     return () => el.removeEventListener("wheel", handleWheel);
   }, [data.length, brushRange]);
 
+  // Mobile layout toggle
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
   if (data.length === 0) return null;
 
   // Determine visible range
@@ -225,25 +236,25 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
       {/* Header */}
       <button
         onClick={toggle}
-        className="w-full flex items-center justify-between px-5 py-3 hover:bg-accent transition-colors cursor-pointer"
+        className="w-full flex items-start justify-between gap-2 px-3 py-3 sm:items-center sm:px-5 hover:bg-accent transition-colors cursor-pointer"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           <div className="h-7 w-7 rounded-lg bg-cyan-500/10 flex items-center justify-center">
             <TrendingDown className="h-3.5 w-3.5 text-cyan-400" />
           </div>
           <span className="text-sm font-medium text-foreground/90">Score Progression</span>
-          <span className="text-[11px] font-mono text-muted-foreground">
+          <span className="text-[11px] font-mono text-muted-foreground whitespace-nowrap">
             {completedWithScore.length} evals
           </span>
-          {improvements.length > 0 && (
+          {!isMobile && improvements.length > 0 && (
             <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/15">
               <Trophy className="h-2.5 w-2.5" />
               {improvements.length} improvements
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          {bestValBpb != null && (
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          {!isMobile && bestValBpb != null && (
             <span className="flex items-center gap-1.5 text-xs font-mono text-emerald-400">
               <span className="inline-block w-4 border-t-2 border-dashed border-emerald-400/60" />
               best: {bestValBpb.toFixed(4)}
@@ -275,7 +286,7 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
               </button>
             </div>
           )}
-          {!isZoomed && data.length > 20 && (
+          {!isMobile && !isZoomed && data.length > 20 && (
             <div className="flex items-center gap-1 mb-1 px-1">
               <Maximize2 className="h-3 w-3 text-muted-foreground" />
               <span className="text-[10px] text-muted-foreground">
@@ -283,8 +294,8 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
               </span>
             </div>
           )}
-          <div className="h-60" ref={chartContainerRef} style={{ minWidth: 0 }}>
-            <ResponsiveContainer width="99%" height="100%">
+          <div className="h-48 sm:h-60" ref={chartContainerRef} style={{ minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
                 <defs>
                   <linearGradient id="bpbGradient" x1="0" y1="0" x2="0" y2="1">
@@ -304,7 +315,7 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
                   tickLine={false}
                   axisLine={{ stroke: "currentColor", strokeOpacity: 0.06 }}
                   interval="preserveStartEnd"
-                  minTickGap={visibleCount > 80 ? 60 : 30}
+                  minTickGap={isMobile ? 48 : visibleCount > 80 ? 60 : 30}
                 />
                 <YAxis
                   domain={[yMin - yPad, yMax + yPad]}
@@ -312,7 +323,7 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: number) => v.toFixed(visibleCount <= 30 ? 4 : 3)}
-                  width={visibleCount <= 30 ? 58 : 48}
+                  width={isMobile ? 44 : visibleCount <= 30 ? 58 : 48}
                 />
                 <Tooltip
                   content={<ChartTooltip visibleCount={visibleCount} />}
@@ -337,35 +348,37 @@ export function IterationChart({ projectId, runId, bestValBpb }: IterationChartP
                   connectNulls
                   isAnimationActive={false}
                 />
-                <Brush
-                  dataKey="iteration"
-                  height={28}
-                  stroke="var(--color-border)"
-                  fill="transparent"
-                  travellerWidth={8}
-                  startIndex={brushRange.startIndex}
-                  endIndex={brushRange.endIndex}
-                  onChange={(range: any) => {
-                    if (range && typeof range.startIndex === "number") {
-                      setBrushRange({ startIndex: range.startIndex, endIndex: range.endIndex });
-                    }
-                  }}
-                >
-                  <AreaChart data={data}>
-                    <Area
-                      type="stepAfter"
-                      dataKey="val_bpb"
-                      stroke="#22d3ee"
-                      strokeWidth={0.8}
-                      strokeOpacity={0.4}
-                      fill="#22d3ee"
-                      fillOpacity={0.05}
-                      dot={false}
-                      isAnimationActive={false}
-                      connectNulls
-                    />
-                  </AreaChart>
-                </Brush>
+                {!isMobile && (
+                  <Brush
+                    dataKey="iteration"
+                    height={28}
+                    stroke="var(--color-border)"
+                    fill="transparent"
+                    travellerWidth={8}
+                    startIndex={brushRange.startIndex}
+                    endIndex={brushRange.endIndex}
+                    onChange={(range: any) => {
+                      if (range && typeof range.startIndex === "number") {
+                        setBrushRange({ startIndex: range.startIndex, endIndex: range.endIndex });
+                      }
+                    }}
+                  >
+                    <AreaChart data={data}>
+                      <Area
+                        type="stepAfter"
+                        dataKey="val_bpb"
+                        stroke="#22d3ee"
+                        strokeWidth={0.8}
+                        strokeOpacity={0.4}
+                        fill="#22d3ee"
+                        fillOpacity={0.05}
+                        dot={false}
+                        isAnimationActive={false}
+                        connectNulls
+                      />
+                    </AreaChart>
+                  </Brush>
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>
