@@ -115,6 +115,26 @@ def _default_port(command: str) -> int:
     return 5173 if command == "frontend" else 8000
 
 
+def _find_frontend_dist() -> Path | None:
+    """Find frontend static assets across source and packaged layouts."""
+    if getattr(sys, "frozen", False):
+        candidates = [
+            Path(sys._MEIPASS) / "frontend_dist",  # type: ignore[attr-defined]
+            Path(sys.executable).resolve().parent / "frontend_dist",
+        ]
+    else:
+        repo_root = Path(__file__).resolve().parent.parent
+        candidates = [
+            Path(__file__).resolve().parent / "frontend_dist",
+            repo_root / "frontend" / "dist",
+        ]
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def main() -> None:
     multiprocessing.freeze_support()  # Required for frozen multiprocessing on Windows
 
@@ -173,9 +193,9 @@ def _run_frontend(host: str, port: int) -> None:
     """Serve only the bundled frontend static files."""
     import uvicorn
 
-    dist_dir = _base_dir() / "frontend_dist"
-    if not dist_dir.exists():
-        logger.error("No bundled frontend found at %s", dist_dir)
+    dist_dir = _find_frontend_dist()
+    if dist_dir is None:
+        logger.error("No bundled frontend found in expected locations")
         sys.exit(1)
 
     from starlette.applications import Starlette

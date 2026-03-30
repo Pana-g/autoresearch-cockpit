@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-03-30
+
+### Fixed
+
+- **Executable mode reliability** — Improved packaged launcher behavior so mode selection remains consistent for `all`, `backend`, and `frontend` commands.
+- **Frontend asset discovery** — Added fallback lookup paths for bundled static assets in frozen and executable-adjacent layouts to prevent "backend-only" startup when UI assets are present.
+
 ## [0.5.3] - 2026-03-30
 
 ### Fixed
@@ -161,7 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database migrations** — Alembic-managed schema with full migration history
 - **Default project settings** — configurable defaults for run parameters and compaction settings
 
-[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/Pana-g/autoresearch-cockpit/compare/v0.5.0...v0.5.1

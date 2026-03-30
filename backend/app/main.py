@@ -84,7 +84,7 @@ def _run_alembic_upgrade() -> None:
 
 app = FastAPI(
     title="AutoResearch Cockpit",
-    version="0.5.3",
+    version="0.5.4",
     description="Control plane for karpathy/autoresearch",
     lifespan=lifespan,
 )
@@ -131,10 +131,23 @@ _serve_mode = _os.environ.get("AR_SERVE_MODE", "all")
 if _serve_mode != "backend":
     def _find_frontend_dist() -> Path | None:
         if getattr(sys, "frozen", False):
-            candidate = Path(sys._MEIPASS) / "frontend_dist"  # type: ignore[attr-defined]
+            candidates = [
+                Path(sys._MEIPASS) / "frontend_dist",  # type: ignore[attr-defined]
+                Path(sys.executable).resolve().parent / "frontend_dist",
+            ]
         else:
-            candidate = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
-        return candidate if candidate.exists() else None
+            repo_root = Path(__file__).resolve().parent.parent.parent
+            candidates = [
+                # Staged build output used by PyInstaller workflows and some local packaging paths.
+                Path(__file__).resolve().parent.parent / "frontend_dist",
+                # Vite output when running from source.
+                repo_root / "frontend" / "dist",
+            ]
+
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return None
 
     _frontend_dist = _find_frontend_dist()
     if _frontend_dist is not None:

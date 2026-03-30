@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"/></a>
-  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.5.3-informational" alt="Version"/></a>
+  <a href="https://github.com/Pana-g/autoresearch-cockpit/releases"><img src="https://img.shields.io/badge/version-0.5.4-informational" alt="Version"/></a>
   <a href="https://github.com/Pana-g/autoresearch-cockpit/issues"><img src="https://img.shields.io/github/issues/Pana-g/autoresearch-cockpit" alt="Open Issues"/></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions Welcome"/></a>
   <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-ff69b4" alt="Code of Conduct"/></a>
@@ -98,7 +98,7 @@ Open **http://localhost:8000** — the frontend and backend are both served from
 
 ```sh
 # Install a specific version
-curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --version v0.5.3
+curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --version v0.5.4
 
 # Custom install directory
 curl -fsSL https://raw.githubusercontent.com/Pana-g/autoresearch-cockpit/main/install.sh | bash -s -- --dir /usr/local/bin
